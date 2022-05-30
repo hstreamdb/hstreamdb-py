@@ -1,10 +1,11 @@
 import functools
-from typing import Optional
+from typing import Optional, Any, Iterable
 import grpc
 import logging
 
 import HStream.HStreamApi_pb2 as ApiPb
 import HStream.HStreamApi_pb2_grpc as ApiGrpc
+from hstreamdb.aio.producer import BufferedProducer
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ def dec_api(f):
             # The service is currently unavailable, so we choose another
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 logger.warning("Service unavailable, switching to another...")
-                client.switch_channel()
+                client._switch_channel()
             else:
                 raise e
 
@@ -26,7 +27,13 @@ def dec_api(f):
 
 
 class HStreamClient:
+    DEFAULT_STREAM_KEY = "__default__"
+
+    # TODO: improvements
     _channels: {str: Optional[grpc.aio.Channel]} = {}
+    _unvaliadble_channels: {str: Optional[grpc.aio.Channel]} = {}
+    _append_channels: {(str, str): Optional[grpc.aio.Channel]} = {}
+
     _stub: ApiGrpc.HStreamApiStub
 
     def __init__(self, target: str):
@@ -77,11 +84,93 @@ class HStreamClient:
             for s in r.streams
         ]
 
+    # TODO: retry
+    async def append(
+        self,
+        name: str,
+        payloads: Iterable[Any],
+        key: Optional[str] = None,
+    ):
+        def cons_record(payload):
+            if isinstance(payload, bytes):
+                return ApiPb.HStreamRecord(
+                    header=ApiPb.HStreamRecordHeader(
+                        flag=ApiPb.HStreamRecordHeader.Flag.RAW,
+                        attributes=None,
+                        key=key,
+                    ),
+                    payload=payload,
+                )
+            elif isinstance(payload, dict):
+                return ApiPb.HStreamRecord(
+                    header=ApiPb.HStreamRecordHeader(
+                        flag=ApiPb.HStreamRecordHeader.Flag.JSON,
+                        attributes=None,
+                        key=key,
+                    ),
+                    payload=payload,
+                )
+            elif isinstance(payload, str):
+                return cons_record(payload.encode("utf-8"))
+            else:
+                raise ValueError("Invalid payload type!")
+
+        channel = await self._lookup_stream(name, key=key)
+        stub = ApiGrpc.HStreamApiStub(channel)
+        r = await stub.Append(
+            ApiPb.AppendRequest(
+                streamName=name, records=map(cons_record, payloads)
+            )
+        )
+        return (
+            {
+                "shard_id": x.shardId,
+                "batch_id": x.batchId,
+                "batch_index": x.batchIndex,
+            }
+            for x in r.recordIds
+        )
+
+    def create_producer(
+        self,
+        size_trigger=0,
+        time_trigger=0,
+        workers=1,
+    ):
+        return BufferedProducer(
+            self.append,
+            size_trigger=size_trigger,
+            time_trigger=time_trigger,
+            workers=workers,
+        )
+
     # -------------------------------------------------------------------------
 
     # TODO
-    def switch_channel(self):
+    def _switch_channel(self):
         pass
+
+    async def _lookup_stream(self, name, key=None):
+        key = key or self.DEFAULT_STREAM_KEY
+        channel = self._append_channels.get((name, key))
+        if channel:
+            return channel
+
+        r = await self._stub.LookupStream(
+            ApiPb.LookupStreamRequest(streamName=name, orderingKey=key)
+        )
+        # there is no reason that returned value does not equal to requested.
+        assert r.streamName == name and r.orderingKey == key
+        target = f"{r.serverNode.host}:{r.serverNode.port}"
+        channel = self._channels.get(target)
+        if channel:
+            self._append_channels[(name, key)] = channel
+            return channel
+        # new channel
+        channel = grpc.aio.insecure_channel(target)
+        self._channels[target] = channel
+        self._append_channels[(name, key)] = channel
+        return channel
 
     async def __aenter__(self):
         return self
