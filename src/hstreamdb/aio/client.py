@@ -6,6 +6,7 @@ import logging
 import HStream.HStreamApi_pb2 as ApiPb
 import HStream.HStreamApi_pb2_grpc as ApiGrpc
 from hstreamdb.aio.producer import BufferedProducer
+from hstreamdb.aio.consumer import Consumer
 
 logger = logging.getLogger(__name__)
 
@@ -28,11 +29,15 @@ def dec_api(f):
 
 class HStreamClient:
     DEFAULT_STREAM_KEY = "__default__"
+    TargetTy = str
 
     # TODO: improvements
-    _channels: {str: Optional[grpc.aio.Channel]} = {}
-    _unvaliadble_channels: {str: Optional[grpc.aio.Channel]} = {}
+    _channels: {TargetTy: Optional[grpc.aio.Channel]} = {}
+    _unvaliadble_channels: {TargetTy: Optional[grpc.aio.Channel]} = {}
+    # TODO
+    # _append_channels: {(str, str): str} = {}
     _append_channels: {(str, str): Optional[grpc.aio.Channel]} = {}
+    _subscription_channels: {str: TargetTy} = {}
 
     _stub: ApiGrpc.HStreamApiStub
 
@@ -49,6 +54,8 @@ class HStreamClient:
             target = f"{node.host}:{node.port}"
             if target not in self._channels:
                 self._channels[target] = None
+
+    # -------------------------------------------------------------------------
 
     @dec_api
     async def create_stream(self, name, replication_factor):
@@ -131,7 +138,7 @@ class HStreamClient:
             for x in r.recordIds
         )
 
-    def create_producer(
+    def new_producer(
         self,
         size_trigger=0,
         time_trigger=0,
@@ -142,6 +149,63 @@ class HStreamClient:
             size_trigger=size_trigger,
             time_trigger=time_trigger,
             workers=workers,
+        )
+
+    @dec_api
+    async def create_subscription(
+        self,
+        subscription: str,
+        stream_name: str,
+        ack_timeout: int = 600,  # 10min
+        max_unacks: int = 10000,
+    ):
+        await self._stub.CreateSubscription(
+            ApiPb.Subscription(
+                subscriptionId=subscription,
+                streamName=stream_name,
+                ackTimeoutSeconds=ack_timeout,
+                maxUnackedRecords=max_unacks,
+            )
+        )
+
+    @dec_api
+    async def list_subscriptions(self):
+        r = await self._stub.ListSubscriptions(None)
+        return [
+            {
+                "subscription": s.subscriptionId,
+                "stream_name": s.streamName,
+                "ack_timeout": s.ackTimeoutSeconds,
+                "max_unacks": s.maxUnackedRecords,
+            }
+            for s in r.subscription
+        ]
+
+    @dec_api
+    async def does_subscription_exist(self, subscription: str):
+        r = await self._stub.CheckSubscriptionExist(
+            ApiPb.CheckSubscriptionExistRequest(subscriptionId=subscription)
+        )
+        return r.exists
+
+    @dec_api
+    async def delete_subscription(self, subscription: str, force=False):
+        await self._stub.DeleteSubscription(
+            ApiPb.DeleteSubscriptionRequest(
+                subscriptionId=subscription, force=force
+            )
+        )
+
+    def new_consumer(self, name: str, subscription: str, processing_func):
+        async def find_stub():
+            channel = await self._lookup_subscription(subscription)
+            return ApiGrpc.HStreamApiStub(channel)
+
+        return Consumer(
+            name,
+            subscription,
+            find_stub,
+            processing_func,
         )
 
     # -------------------------------------------------------------------------
@@ -156,12 +220,8 @@ class HStreamClient:
         if channel:
             return channel
 
-        r = await self._stub.LookupStream(
-            ApiPb.LookupStreamRequest(streamName=name, orderingKey=key)
-        )
-        # there is no reason that returned value does not equal to requested.
-        assert r.streamName == name and r.orderingKey == key
-        target = f"{r.serverNode.host}:{r.serverNode.port}"
+        node = await self._lookup_stream_api(name, key)
+        target = self._cons_target(node)
         channel = self._channels.get(target)
         if channel:
             self._append_channels[(name, key)] = channel
@@ -171,6 +231,45 @@ class HStreamClient:
         self._channels[target] = channel
         self._append_channels[(name, key)] = channel
         return channel
+
+    @dec_api
+    async def _lookup_stream_api(self, name, key):
+        r = await self._stub.LookupStream(
+            ApiPb.LookupStreamRequest(streamName=name, orderingKey=key)
+        )
+        # there is no reason that returned value does not equal to requested.
+        assert r.streamName == name and r.orderingKey == key
+        return r.serverNode
+
+    async def _lookup_subscription(self, subscription: str):
+        target = self._subscription_channels.get(subscription)
+        if not target:
+            node = await self._lookup_subscription_api(subscription)
+            target = self._cons_target(node)
+            self._subscription_channels[subscription] = target
+
+        channel = self._channels.get(target)
+        if channel:
+            return channel
+        else:
+            # new channel
+            channel = grpc.aio.insecure_channel(target)
+            self._channels[target] = channel
+            return channel
+
+    @dec_api
+    async def _lookup_subscription_api(self, subscription: str):
+        r = await self._stub.LookupSubscription(
+            ApiPb.LookupSubscriptionRequest(subscriptionId=subscription)
+        )
+        assert r.subscriptionId == subscription
+        return r.serverNode
+
+    @staticmethod
+    def _cons_target(node):
+        return f"{node.host}:{node.port}"
+
+    # -------------------------------------------------------------------------
 
     async def __aenter__(self):
         return self
