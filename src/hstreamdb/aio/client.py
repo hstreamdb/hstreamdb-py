@@ -255,6 +255,8 @@ class HStreamClient:
             target = self._cons_target(node)
             self._subscription_channels[subscription] = target
 
+        logger.debug(f"Find target for subscription <{subscription}>: {target}")
+
         channel = self._channels.get(target)
         if channel:
             return channel
