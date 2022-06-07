@@ -1,5 +1,5 @@
 import functools
-from typing import Optional, Any, Iterable
+from typing import Optional, Any, Iterable, Type
 import grpc
 import logging
 
@@ -7,6 +7,8 @@ import HStream.HStreamApi_pb2 as ApiPb
 import HStream.HStreamApi_pb2_grpc as ApiGrpc
 from hstreamdb.aio.producer import BufferedProducer
 from hstreamdb.aio.consumer import Consumer
+
+__all__ = ["insecure_client", "HStreamClient", "BufferedProducer"]
 
 logger = logging.getLogger(__name__)
 
@@ -33,10 +35,9 @@ class HStreamClient:
 
     # TODO: improvements
     _channels: {TargetTy: Optional[grpc.aio.Channel]} = {}
-    _unvaliadble_channels: {TargetTy: Optional[grpc.aio.Channel]} = {}
     # TODO
-    # _append_channels: {(str, str): str} = {}
-    _append_channels: {(str, str): Optional[grpc.aio.Channel]} = {}
+    # _unvaliadble_channels: {TargetTy: Optional[grpc.aio.Channel]} = {}
+    _append_channels: {(str, str): TargetTy} = {}
     _subscription_channels: {str: TargetTy} = {}
 
     _stub: ApiGrpc.HStreamApiStub
@@ -91,7 +92,6 @@ class HStreamClient:
             for s in r.streams
         ]
 
-    # TODO: retry
     async def append(
         self,
         name: str,
@@ -140,15 +140,21 @@ class HStreamClient:
 
     def new_producer(
         self,
+        append_callback: Optional[Type[BufferedProducer.AppendCallback]] = None,
         size_trigger=0,
         time_trigger=0,
         workers=1,
+        retry_count=0,
+        retry_max_delay=60,
     ):
         return BufferedProducer(
             self.append,
+            append_callback=append_callback,
             size_trigger=size_trigger,
             time_trigger=time_trigger,
             workers=workers,
+            retry_count=retry_count,
+            retry_max_delay=retry_max_delay,
         )
 
     @dec_api
@@ -216,21 +222,22 @@ class HStreamClient:
 
     async def _lookup_stream(self, name, key=None):
         key = key or self.DEFAULT_STREAM_KEY
-        channel = self._append_channels.get((name, key))
-        if channel:
-            return channel
+        target = self._append_channels.get((name, key))
+        if not target:
+            node = await self._lookup_stream_api(name, key)
+            target = self._cons_target(node)
+            self._append_channels[(name, key)] = target
 
-        node = await self._lookup_stream_api(name, key)
-        target = self._cons_target(node)
+        logger.debug(f"Find target for stream <{name},{key}>: {target}")
+
         channel = self._channels.get(target)
         if channel:
-            self._append_channels[(name, key)] = channel
             return channel
-        # new channel
-        channel = grpc.aio.insecure_channel(target)
-        self._channels[target] = channel
-        self._append_channels[(name, key)] = channel
-        return channel
+        else:
+            # new channel
+            channel = grpc.aio.insecure_channel(target)
+            self._channels[target] = channel
+            return channel
 
     @dec_api
     async def _lookup_stream_api(self, name, key):
