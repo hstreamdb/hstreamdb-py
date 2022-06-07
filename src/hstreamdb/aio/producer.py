@@ -1,5 +1,6 @@
+import abc
 import asyncio
-from typing import Optional, Any, Callable, Awaitable, Iterable
+from typing import Optional, Any, Callable, Awaitable, Iterable, Type
 import logging
 
 __all__ = ["PayloadsFull", "PayloadTooBig", "PayloadGroup", "BufferedProducer"]
@@ -8,7 +9,8 @@ logger = logging.getLogger(__name__)
 
 
 class Timer:
-    _enable: asyncio.Event = asyncio.Event()
+    _continue: asyncio.Event = asyncio.Event()
+    _enable: bool = True
     _task: asyncio.Task
 
     def __init__(self, delay, coro):
@@ -17,16 +19,21 @@ class Timer:
         self._task = asyncio.create_task(self._loop())
 
     def start(self):
-        self._enable.set()
+        self._continue.set()
 
     def stop(self):
-        self._enable.clear()
+        self._continue.clear()
         self._task.cancel()
+
+    def exit(self):
+        self._enable = False
 
     async def _loop(self):
         while True:
+            if not self._enable:
+                break
             try:
-                await self._enable.wait()
+                await self._continue.wait()
                 await asyncio.sleep(self._delay)
                 await asyncio.shield(self._coro())
             except asyncio.CancelledError:
@@ -48,7 +55,7 @@ class PayloadGroup:
     _lock: asyncio.Lock
 
     _maxsize: int
-    _timer: Optional[asyncio.Task] = None
+    _timer: Optional[Timer] = None
 
     _flushing_payloads: [bytes] = []
     _flushing_size: int = 0
@@ -100,6 +107,10 @@ class PayloadGroup:
         self._flushing_size = 0
         self._flush_done.set()
 
+    def exit(self):
+        if self._timer:
+            self._timer.exit()
+
     def _flush_nowait(self):
         self._flushing_payloads = self._payloads
         self._flushing_size = self._size
@@ -121,7 +132,6 @@ class PayloadGroup:
         async with self._lock:
             self._payloads.append(payload)
             self._size += payload_size
-            logger.debug(f"append size: {self._size}")
 
     async def _set_timer(self, delay):
         async def loop():
@@ -151,20 +161,43 @@ class BufferedProducer:
 
     _group: {GroupKeyTy: PayloadGroup} = {}
 
+    class AppendCallback(abc.ABC):
+        @abc.abstractmethod
+        def on_success(
+            self, stream_name: str, payloads: [bytes], stream_key: Optional[str]
+        ):
+            ...
+
+        @abc.abstractmethod
+        def on_fail(
+            self,
+            stream_name: str,
+            payloads: [bytes],
+            stream_key: Optional[str],
+            e: Exception,
+        ):
+            ...
+
     def __init__(
         self,
         flush_coro: Callable[
             [str, Iterable[Any], Optional[str]], Awaitable[None]
         ],
+        append_callback: Optional[Type[AppendCallback]] = None,
         size_trigger=0,
         time_trigger=0,
         workers=1,
+        retry_count=0,
+        retry_max_delay=60,  # seconds
     ):
         if workers < 1:
             raise ValueError("workers must be no less than 1")
         self._size_trigger = size_trigger
         self._time_trigger = time_trigger
+        self._retry_count = retry_count
+        self._retry_max_delay = retry_max_delay
         self._flush_coro = flush_coro
+        self._append_callback = append_callback
         self._queues = [asyncio.Queue() for _ in range(workers)]
         self._workers = [
             asyncio.create_task(self._loop_queue(self._queues[i]))
@@ -197,19 +230,80 @@ class BufferedProducer:
             raise ValueError("No such payloads!")
         await payloads.flush()
 
-    # TODO
-    def close(self):
-        pass
+    async def flushall(self):
+        for _, payloads in self._group.items():
+            await payloads.flush()
+
+    async def close(self):
+        for _, pg in self._group.items():
+            pg.exit()
+
+        await self.flushall()
+
+        for q in self._queues:
+            await q.put(None)
+
+    async def wait(self):
+        try:
+            await asyncio.gather(
+                *[pg._timer._task for _, pg in self._group.items() if pg._timer]
+            )
+        except asyncio.CancelledError:
+            pass
+        await asyncio.gather(*self._workers)
+
+    async def wait_and_close(self):
+        await self.close()
+        await self.wait()
 
     async def _loop_queue(self, queue):
         while True:
             group_key = await queue.get()
-            payloads = self._group[group_key]
-            bs, _size = payloads.pop()
+            if group_key is None:
+                break
+
+            payload_group = self._group[group_key]
             stream_name, stream_key = self._uncons_group_key(group_key)
-            await self._flush_coro(stream_name, bs, stream_key)
-            await payloads.post_flush()
+
+            await self._flusing_worker(stream_name, payload_group, stream_key)
             queue.task_done()
+
+    async def _flusing_worker(self, stream_name, payload_group, stream_key):
+        payloads, _size = payload_group.pop()
+        logger.debug(
+            f"Flushing stream <{stream_name},{stream_key}> "
+            f"with {len(payloads)} batches..."
+        )
+        retries = 0
+        while True:
+            try:
+                await self._flush_coro(stream_name, payloads, stream_key)
+                await payload_group.post_flush()
+            except Exception as e:  # TODO: should be a specific append exception
+                if self._retry_count < 0 or retries < self._retry_count:
+                    logger.debug(
+                        f"Retrying {retries} with max deley {self._retry_max_delay}s..."
+                    )
+                    await asyncio.sleep(
+                        min(2**retries, self._retry_max_delay)
+                        if self._retry_max_delay >= 0
+                        else 2**retries
+                    )
+                    retries += 1
+                    continue
+                else:
+                    if self._append_callback:
+                        return self._append_callback.on_fail(
+                            stream_name, payloads, stream_key, e
+                        )
+                    else:
+                        raise e
+            break
+
+        if self._append_callback:
+            return self._append_callback.on_success(
+                stream_name, payloads, stream_key
+            )
 
     def _find_queue(self, group_key):
         return self._queues[abs(hash(group_key)) % len(self._queues)]
