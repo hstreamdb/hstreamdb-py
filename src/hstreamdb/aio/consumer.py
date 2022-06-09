@@ -8,6 +8,7 @@ from typing import (
     Optional,
     Dict,
     Iterator,
+    Iterable,
 )
 
 import HStream.HStreamApi_pb2 as ApiPb
@@ -95,7 +96,7 @@ class Consumer:
         else:
             logger.error("Make sure you have started the consumer!")
 
-    async def _ack(self, record_ids: [RecordId]):
+    async def _ack(self, record_ids: Iterable[RecordId]):
         await self._requests.put(
             ApiPb.StreamingFetchRequest(
                 subscriptionId=self._subscription,
