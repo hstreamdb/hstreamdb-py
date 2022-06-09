@@ -13,5 +13,5 @@ pip install grpcio-tools
 python -m grpc_tools.protoc -I./protos \
   --python_out=src \
   --grpc_python_out=src \
-  ./protos/HStreamApi.proto
+  ./protos/HStream/HStreamApi.proto
 ```
