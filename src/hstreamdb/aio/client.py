@@ -3,8 +3,8 @@ from typing import Optional, Any, Iterable, Type
 import grpc
 import logging
 
-import HStream.HStreamApi_pb2 as ApiPb
-import HStream.HStreamApi_pb2_grpc as ApiGrpc
+import HStream.Server.HStreamApi_pb2 as ApiPb
+import HStream.Server.HStreamApi_pb2_grpc as ApiGrpc
 from hstreamdb.aio.producer import BufferedProducer
 from hstreamdb.aio.consumer import Consumer
 

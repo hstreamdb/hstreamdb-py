@@ -11,8 +11,8 @@ from typing import (
     Iterable,
 )
 
-import HStream.HStreamApi_pb2 as ApiPb
-import HStream.HStreamApi_pb2_grpc as ApiGrpc
+import HStream.Server.HStreamApi_pb2 as ApiPb
+import HStream.Server.HStreamApi_pb2_grpc as ApiGrpc
 
 logger = logging.getLogger(__name__)
 

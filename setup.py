@@ -25,6 +25,7 @@ setuptools.setup(
     install_requires=[
         "grpcio",
         "protobuf",
+        "hstreamdb-api>=0.0.2",
     ],
     python_requires=">=3.7",
 )
