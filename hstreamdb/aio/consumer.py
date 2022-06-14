@@ -1,59 +1,20 @@
 import asyncio
 import logging
 import json
-from typing import (
-    Any,
-    NamedTuple,
-    Union,
-    Optional,
-    Dict,
-    Iterator,
-    Iterable,
-)
+from typing import Any, Iterator, Iterable
 
 import HStream.Server.HStreamApi_pb2 as ApiPb
 import HStream.Server.HStreamApi_pb2_grpc as ApiGrpc
+from hstreamdb.types import (
+    RecordId,
+    record_id_to,
+    record_id_from,
+    Record,
+    RecordHeader,
+    TimeStamp,
+)
 
 logger = logging.getLogger(__name__)
-
-
-class RecordId(NamedTuple):
-    shard_id: int
-    batch_id: int
-    batch_index: int
-
-
-def record_id_to(record_id: RecordId) -> ApiPb.RecordId:
-    return ApiPb.RecordId(
-        shardId=record_id.shard_id,
-        batchId=record_id.batch_id,
-        batchIndex=record_id.batch_index,
-    )
-
-
-def record_id_from(record_id: ApiPb.RecordId) -> RecordId:
-    return RecordId(
-        shard_id=record_id.shardId,
-        batch_id=record_id.batchId,
-        batch_index=record_id.batchIndex,
-    )
-
-
-class TimeStamp(NamedTuple):
-    seconds: int
-    nanos: int
-
-
-class RecordHeader(NamedTuple):
-    publish_time: TimeStamp
-    key: Optional[str]
-    attributes: Dict[str, str]
-
-
-class Record(NamedTuple):
-    id: RecordId
-    header: RecordHeader
-    payload: Union[bytes, dict]
 
 
 class Consumer:
