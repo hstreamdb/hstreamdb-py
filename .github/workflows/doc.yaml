@@ -31,6 +31,8 @@ jobs:
           rm -rf ./*
 
           cp -a /tmp/html/. ./
+          # make sure there is a nojekyll file the root of pages to bypass Jekyll processing
+          touch .nojekyll
           git add -A
           git commit -m "Published $SRC_HEAD"
           git push origin gh-pages -f
