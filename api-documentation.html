@@ -1,0 +1,592 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>API Documentation &#8212; HStreamDB 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Examples" href="examples.html" />
+    <link rel="prev" title="Welcome to HStreamDB’s documentation!" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-hstreamdb">
+<span id="id1"></span><span id="api-documentation"></span><h1>API Documentation<a class="headerlink" href="#module-hstreamdb" title="Permalink to this heading">¶</a></h1>
+<p>For examples about actual usage, see the <a class="reference internal" href="examples.html#examples"><span class="std std-ref">Examples</span></a>.</p>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this heading">¶</a></h2>
+<section id="create-client">
+<h3>Create Client<a class="headerlink" href="#create-client" title="Permalink to this heading">¶</a></h3>
+<dl class="py function">
+<dt class="sig sig-object py" id="hstreamdb.insecure_client">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">hstreamdb.</span></span><span class="sig-name descname"><span class="pre">insecure_client</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'127.0.0.1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6570</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/aio/client.html#insecure_client"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.insecure_client" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates an insecure client to a cluster.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>host</strong> – hostname to connect to HStreamDB, defaults to ‘127.0.0.1’</p></li>
+<li><p><strong>port</strong> – port to connect to HStreanDB, defaults to 6570</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A <a class="reference internal" href="#hstreamdb.HStreamDBClient" title="hstreamdb.HStreamDBClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">HStreamDBClient</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="hstreamdbclient-object">
+<h3>HStreamDBClient Object<a class="headerlink" href="#hstreamdbclient-object" title="Permalink to this heading">¶</a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="hstreamdb.HStreamDBClient">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">hstreamdb.</span></span><span class="sig-name descname"><span class="pre">HStreamDBClient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'127.0.0.1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6570</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/aio/client.html#HStreamDBClient"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.HStreamDBClient" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>host</strong> (<em>str</em>) – </p></li>
+<li><p><strong>port</strong> (<em>int</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="hstreamdb.HStreamDBClient.init">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">init</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/aio/client.html#HStreamDBClient.init"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.HStreamDBClient.init" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hstreamdb.HStreamDBClient.create_stream">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_stream</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">replication_factor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/aio/client.html#HStreamDBClient.create_stream"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.HStreamDBClient.create_stream" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hstreamdb.HStreamDBClient.delete_stream">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">delete_stream</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_non_exist</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/aio/client.html#HStreamDBClient.delete_stream"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.HStreamDBClient.delete_stream" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hstreamdb.HStreamDBClient.list_streams">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">list_streams</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/aio/client.html#HStreamDBClient.list_streams"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.HStreamDBClient.list_streams" title="Permalink to this definition">¶</a></dt>
+<dd><p>List all streams</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>Iterator</em>[<a class="reference internal" href="#hstreamdb.Stream" title="hstreamdb.types.Stream"><em>Stream</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hstreamdb.HStreamDBClient.append">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">append</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payloads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/aio/client.html#HStreamDBClient.append"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.HStreamDBClient.append" title="Permalink to this definition">¶</a></dt>
+<dd><p>Append payloads to a stream.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – stream name</p></li>
+<li><p><strong>payloads</strong> (<em>Iterable</em><em>[</em><em>Any</em><em>]</em>) – a list of string, bytes or dict(json).</p></li>
+<li><p><strong>key</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – Optional stream key.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Appended RecordIds generator</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>Iterator</em>[<a class="reference internal" href="#hstreamdb.RecordId" title="hstreamdb.types.RecordId"><em>RecordId</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hstreamdb.HStreamDBClient.new_producer">
+<span class="sig-name descname"><span class="pre">new_producer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">append_callback</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size_trigger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_trigger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry_max_delay</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">60</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/aio/client.html#HStreamDBClient.new_producer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.HStreamDBClient.new_producer" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>append_callback</strong> (<em>Optional</em><em>[</em><em>Type</em><em>[</em><a class="reference internal" href="#hstreamdb.BufferedProducer.AppendCallback" title="hstreamdb.aio.producer.BufferedProducer.AppendCallback"><em>AppendCallback</em></a><em>]</em><em>]</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hstreamdb.HStreamDBClient.create_subscription">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_subscription</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subscription_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stream_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ack_timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">600</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_unacks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/aio/client.html#HStreamDBClient.create_subscription"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.HStreamDBClient.create_subscription" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>subscription_id</strong> (<em>str</em>) – </p></li>
+<li><p><strong>stream_name</strong> (<em>str</em>) – </p></li>
+<li><p><strong>ack_timeout</strong> (<em>int</em>) – </p></li>
+<li><p><strong>max_unacks</strong> (<em>int</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hstreamdb.HStreamDBClient.list_subscriptions">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">list_subscriptions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/aio/client.html#HStreamDBClient.list_subscriptions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.HStreamDBClient.list_subscriptions" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>Iterator</em>[<a class="reference internal" href="#hstreamdb.Subscription" title="hstreamdb.types.Subscription"><em>Subscription</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hstreamdb.HStreamDBClient.does_subscription_exist">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">does_subscription_exist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subscription_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/aio/client.html#HStreamDBClient.does_subscription_exist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.HStreamDBClient.does_subscription_exist" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>subscription_id</strong> (<em>str</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hstreamdb.HStreamDBClient.delete_subscription">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">delete_subscription</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subscription_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/aio/client.html#HStreamDBClient.delete_subscription"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.HStreamDBClient.delete_subscription" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>subscription_id</strong> (<em>str</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hstreamdb.HStreamDBClient.new_consumer">
+<span class="sig-name descname"><span class="pre">new_consumer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subscription_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processing_func</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/aio/client.html#HStreamDBClient.new_consumer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.HStreamDBClient.new_consumer" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – </p></li>
+<li><p><strong>subscription_id</strong> (<em>str</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="bufferedproducer-object">
+<h3>BufferedProducer Object<a class="headerlink" href="#bufferedproducer-object" title="Permalink to this heading">¶</a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="hstreamdb.BufferedProducer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">hstreamdb.</span></span><span class="sig-name descname"><span class="pre">BufferedProducer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flush_coro</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">append_callback</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size_trigger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_trigger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry_max_delay</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">60</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/aio/producer.html#BufferedProducer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.BufferedProducer" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>flush_coro</strong> (<em>Callable</em><em>[</em><em>[</em><em>str</em><em>, </em><em>Iterable</em><em>[</em><em>Any</em><em>]</em><em>, </em><em>Optional</em><em>[</em><em>str</em><em>]</em><em>]</em><em>, </em><em>Awaitable</em><em>[</em><em>None</em><em>]</em><em>]</em>) – </p></li>
+<li><p><strong>append_callback</strong> (<em>Optional</em><em>[</em><em>Type</em><em>[</em><a class="reference internal" href="#hstreamdb.BufferedProducer.AppendCallback" title="hstreamdb.aio.producer.BufferedProducer.AppendCallback"><em>AppendCallback</em></a><em>]</em><em>]</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="hstreamdb.BufferedProducer.GroupKeyTy">
+<span class="sig-name descname"><span class="pre">GroupKeyTy</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(&lt;class</span> <span class="pre">'str'&gt;,</span> <span class="pre">typing.Union[str,</span> <span class="pre">NoneType])</span></em><a class="headerlink" href="#hstreamdb.BufferedProducer.GroupKeyTy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="hstreamdb.BufferedProducer.AppendCallback">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AppendCallback</span></span><a class="reference internal" href="_modules/hstreamdb/aio/producer.html#BufferedProducer.AppendCallback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.BufferedProducer.AppendCallback" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="hstreamdb.BufferedProducer.AppendCallback.on_success">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">on_success</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stream_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payloads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stream_key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/aio/producer.html#BufferedProducer.AppendCallback.on_success"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.BufferedProducer.AppendCallback.on_success" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stream_name</strong> (<em>str</em>) – </p></li>
+<li><p><strong>payloads</strong> (<em>[</em><em>&lt;class 'bytes'&gt;</em><em>]</em>) – </p></li>
+<li><p><strong>stream_key</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hstreamdb.BufferedProducer.AppendCallback.on_fail">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">on_fail</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stream_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payloads</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stream_key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/aio/producer.html#BufferedProducer.AppendCallback.on_fail"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.BufferedProducer.AppendCallback.on_fail" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stream_name</strong> (<em>str</em>) – </p></li>
+<li><p><strong>payloads</strong> (<em>[</em><em>&lt;class 'bytes'&gt;</em><em>]</em>) – </p></li>
+<li><p><strong>stream_key</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – </p></li>
+<li><p><strong>e</strong> (<em>Exception</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hstreamdb.BufferedProducer.append">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">append</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stream_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/aio/producer.html#BufferedProducer.append"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.BufferedProducer.append" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stream_name</strong> (<em>str</em>) – </p></li>
+<li><p><strong>payload</strong> (<em>bytes</em>) – </p></li>
+<li><p><strong>key</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hstreamdb.BufferedProducer.flush">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">flush</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stream_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/aio/producer.html#BufferedProducer.flush"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.BufferedProducer.flush" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stream_name</strong> (<em>str</em>) – </p></li>
+<li><p><strong>key</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hstreamdb.BufferedProducer.flushall">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">flushall</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/aio/producer.html#BufferedProducer.flushall"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.BufferedProducer.flushall" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hstreamdb.BufferedProducer.close">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/aio/producer.html#BufferedProducer.close"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.BufferedProducer.close" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hstreamdb.BufferedProducer.wait">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">wait</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/aio/producer.html#BufferedProducer.wait"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.BufferedProducer.wait" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hstreamdb.BufferedProducer.wait_and_close">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">wait_and_close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/aio/producer.html#BufferedProducer.wait_and_close"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.BufferedProducer.wait_and_close" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="consumer-object">
+<h3>Consumer Object<a class="headerlink" href="#consumer-object" title="Permalink to this heading">¶</a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="hstreamdb.Consumer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">hstreamdb.</span></span><span class="sig-name descname"><span class="pre">Consumer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subscription</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">find_stub_coro</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processing_func</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/aio/consumer.html#Consumer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.Consumer" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – </p></li>
+<li><p><strong>subscription</strong> (<em>str</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="hstreamdb.Consumer.ResponseTy">
+<span class="sig-name descname"><span class="pre">ResponseTy</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">typing.Any</span></em><a class="headerlink" href="#hstreamdb.Consumer.ResponseTy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hstreamdb.Consumer.start">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/aio/consumer.html#Consumer.start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.Consumer.start" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="types">
+<h3>Types<a class="headerlink" href="#types" title="Permalink to this heading">¶</a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="hstreamdb.TimeStamp">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">hstreamdb.</span></span><span class="sig-name descname"><span class="pre">TimeStamp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seconds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nanos</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/types.html#TimeStamp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.TimeStamp" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>seconds</strong> (<em>int</em>) – </p></li>
+<li><p><strong>nanos</strong> (<em>int</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="hstreamdb.TimeStamp.seconds">
+<span class="sig-name descname"><span class="pre">seconds</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#hstreamdb.TimeStamp.seconds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="hstreamdb.TimeStamp.nanos">
+<span class="sig-name descname"><span class="pre">nanos</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#hstreamdb.TimeStamp.nanos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="hstreamdb.Stream">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">hstreamdb.</span></span><span class="sig-name descname"><span class="pre">Stream</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">replication_factor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/types.html#Stream"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.Stream" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – </p></li>
+<li><p><strong>replication_factor</strong> (<em>int</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="hstreamdb.Stream.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#hstreamdb.Stream.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="hstreamdb.Stream.replication_factor">
+<span class="sig-name descname"><span class="pre">replication_factor</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#hstreamdb.Stream.replication_factor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="hstreamdb.Subscription">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">hstreamdb.</span></span><span class="sig-name descname"><span class="pre">Subscription</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subscription_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stream_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ack_timeout</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_unacks</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/types.html#Subscription"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.Subscription" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>subscription_id</strong> (<em>str</em>) – </p></li>
+<li><p><strong>stream_name</strong> (<em>str</em>) – </p></li>
+<li><p><strong>ack_timeout</strong> (<em>int</em>) – </p></li>
+<li><p><strong>max_unacks</strong> (<em>int</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="hstreamdb.Subscription.subscription_id">
+<span class="sig-name descname"><span class="pre">subscription_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#hstreamdb.Subscription.subscription_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="hstreamdb.Subscription.stream_name">
+<span class="sig-name descname"><span class="pre">stream_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#hstreamdb.Subscription.stream_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="hstreamdb.Subscription.ack_timeout">
+<span class="sig-name descname"><span class="pre">ack_timeout</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#hstreamdb.Subscription.ack_timeout" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="hstreamdb.Subscription.max_unacks">
+<span class="sig-name descname"><span class="pre">max_unacks</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#hstreamdb.Subscription.max_unacks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 3</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="hstreamdb.RecordId">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">hstreamdb.</span></span><span class="sig-name descname"><span class="pre">RecordId</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shard_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_index</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/types.html#RecordId"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.RecordId" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shard_id</strong> (<em>int</em>) – </p></li>
+<li><p><strong>batch_id</strong> (<em>int</em>) – </p></li>
+<li><p><strong>batch_index</strong> (<em>int</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="hstreamdb.RecordId.shard_id">
+<span class="sig-name descname"><span class="pre">shard_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#hstreamdb.RecordId.shard_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="hstreamdb.RecordId.batch_id">
+<span class="sig-name descname"><span class="pre">batch_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#hstreamdb.RecordId.batch_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="hstreamdb.RecordId.batch_index">
+<span class="sig-name descname"><span class="pre">batch_index</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#hstreamdb.RecordId.batch_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="hstreamdb.RecordHeader">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">hstreamdb.</span></span><span class="sig-name descname"><span class="pre">RecordHeader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">publish_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attributes</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/types.html#RecordHeader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.RecordHeader" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>publish_time</strong> (<a class="reference internal" href="#hstreamdb.TimeStamp" title="hstreamdb.types.TimeStamp"><em>TimeStamp</em></a>) – </p></li>
+<li><p><strong>key</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em>) – </p></li>
+<li><p><strong>attributes</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="hstreamdb.RecordHeader.publish_time">
+<span class="sig-name descname"><span class="pre">publish_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#hstreamdb.TimeStamp" title="hstreamdb.types.TimeStamp"><span class="pre">TimeStamp</span></a></em><a class="headerlink" href="#hstreamdb.RecordHeader.publish_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="hstreamdb.RecordHeader.key">
+<span class="sig-name descname"><span class="pre">key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#hstreamdb.RecordHeader.key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="hstreamdb.RecordHeader.attributes">
+<span class="sig-name descname"><span class="pre">attributes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#hstreamdb.RecordHeader.attributes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="hstreamdb.Record">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">hstreamdb.</span></span><span class="sig-name descname"><span class="pre">Record</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">header</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hstreamdb/types.html#Record"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hstreamdb.Record" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>id</strong> (<a class="reference internal" href="#hstreamdb.RecordId" title="hstreamdb.types.RecordId"><em>RecordId</em></a>) – </p></li>
+<li><p><strong>header</strong> (<a class="reference internal" href="#hstreamdb.RecordHeader" title="hstreamdb.types.RecordHeader"><em>RecordHeader</em></a>) – </p></li>
+<li><p><strong>payload</strong> (<em>Union</em><em>[</em><em>bytes</em><em>, </em><em>dict</em><em>]</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="hstreamdb.Record.id">
+<span class="sig-name descname"><span class="pre">id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#hstreamdb.RecordId" title="hstreamdb.types.RecordId"><span class="pre">RecordId</span></a></em><a class="headerlink" href="#hstreamdb.Record.id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="hstreamdb.Record.header">
+<span class="sig-name descname"><span class="pre">header</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#hstreamdb.RecordHeader" title="hstreamdb.types.RecordHeader"><span class="pre">RecordHeader</span></a></em><a class="headerlink" href="#hstreamdb.Record.header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="hstreamdb.Record.payload">
+<span class="sig-name descname"><span class="pre">payload</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#hstreamdb.Record.payload" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">HStreamDB</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-contents">Module Contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#create-client">Create Client</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#hstreamdbclient-object">HStreamDBClient Object</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bufferedproducer-object">BufferedProducer Object</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#consumer-object">Consumer Object</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#types">Types</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to HStreamDB’s documentation!</a></li>
+      <li>Next: <a href="examples.html" title="next chapter">Examples</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, lambda.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/api-documentation.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
