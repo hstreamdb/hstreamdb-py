@@ -1,10 +1,11 @@
 import setuptools
+from pkg_resources import parse_requirements
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 with open("requirements.txt", "r", encoding="utf-8") as fh:
-    install_requires = fh.read().splitlines()
+    install_requires = [str(r) for r in parse_requirements(fh)]
 
 setuptools.setup(
     name="hstreamdb",
