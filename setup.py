@@ -1,5 +1,12 @@
+import os
+import re
 import setuptools
 from pkg_resources import parse_requirements
+
+BASE_DIR = os.path.dirname(__file__)
+
+with open(os.path.join(BASE_DIR, 'hstreamdb', '__init__.py')) as fh:
+    version = re.search(r"__version__ = \"(.+)\"", fh.read()).group(1)
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
@@ -9,7 +16,7 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="hstreamdb",
-    version="0.0.1",
+    version=version,
     author="lambda",
     author_email="lambda@emqx.io",
     description="Python client for HStreamDB",
