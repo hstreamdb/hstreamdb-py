@@ -6,6 +6,7 @@
 
 import os
 import sys
+import importlib.metadata
 
 # -- Path setup --------------------------------------------------------------
 
@@ -22,9 +23,10 @@ project = "HStreamDB"
 copyright = "2022, lambda"
 author = "lambda"
 
+# The short X.Y version.
+version = importlib.metadata.version("hstreamdb")
 # The full version, including alpha/beta/rc tags
-release = "0.0.1"
-
+release = importlib.metadata.version("hstreamdb")
 
 # -- General configuration ---------------------------------------------------
 

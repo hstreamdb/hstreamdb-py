@@ -12,6 +12,11 @@ jobs:
         with:
           submodules: "recursive"
 
+      - name: set up python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
       - name: install deps
         run: |
           pip install -U -r requirements.txt
