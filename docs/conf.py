@@ -6,7 +6,6 @@
 
 import os
 import sys
-import importlib.metadata
 
 # -- Path setup --------------------------------------------------------------
 
@@ -24,9 +23,14 @@ copyright = "2022, lambda"
 author = "lambda"
 
 # The short X.Y version.
-version = importlib.metadata.version("hstreamdb")
+#
+# Note: The following will read from "hstreamdb.egg-info" directory
+#
+# import importlib.metadata
+# version = importlib.metadata.version("hstreamdb")
+version = hstreamdb.__version__
 # The full version, including alpha/beta/rc tags
-release = importlib.metadata.version("hstreamdb")
+release = hstreamdb.__version__
 
 # -- General configuration ---------------------------------------------------
 
