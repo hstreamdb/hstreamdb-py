@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>hstreamdb.aio.producer &#8212; HStreamDB 0.0.1 documentation</title>
+    <title>hstreamdb.aio.producer &#8212; HStreamDB 0.1.0 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css" />
     <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
@@ -34,7 +34,7 @@
   <h1>Source code for hstreamdb.aio.producer</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">abc</span>
 <span class="kn">import</span> <span class="nn">asyncio</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Awaitable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Type</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Awaitable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Type</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;PayloadsFull&quot;</span><span class="p">,</span> <span class="s2">&quot;PayloadTooBig&quot;</span><span class="p">,</span> <span class="s2">&quot;PayloadGroup&quot;</span><span class="p">,</span> <span class="s2">&quot;BufferedProducer&quot;</span><span class="p">]</span>
@@ -47,7 +47,7 @@
     <span class="n">_enable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">_task</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Task</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">delay</span><span class="p">,</span> <span class="n">coro</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">delay</span><span class="p">,</span> <span class="n">coro</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_delay</span> <span class="o">=</span> <span class="n">delay</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_coro</span> <span class="o">=</span> <span class="n">coro</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_loop</span><span class="p">())</span>
@@ -97,7 +97,7 @@
     <span class="n">_key</span><span class="p">:</span> <span class="n">Any</span>
     <span class="n">_notify_queue</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Queue</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">queue</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">maxsize</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">maxtime</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">queue</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">maxsize</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">maxtime</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_key</span> <span class="o">=</span> <span class="n">key</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_notify_queue</span> <span class="o">=</span> <span class="n">queue</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
@@ -212,7 +212,7 @@
         <span class="p">):</span>
             <span class="o">...</span></div></div>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">flush_coro</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span>
             <span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span>
@@ -305,8 +305,8 @@
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_flusing_worker</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stream_name</span><span class="p">,</span> <span class="n">payload_group</span><span class="p">,</span> <span class="n">stream_key</span><span class="p">):</span>
         <span class="n">payloads</span><span class="p">,</span> <span class="n">_size</span> <span class="o">=</span> <span class="n">payload_group</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-            <span class="n">f</span><span class="s2">&quot;Flushing stream &lt;</span><span class="si">{stream_name}</span><span class="s2">,</span><span class="si">{stream_key}</span><span class="s2">&gt; &quot;</span>
-            <span class="n">f</span><span class="s2">&quot;with {len(payloads)} batches...&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Flushing stream &lt;</span><span class="si">{</span><span class="n">stream_name</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">stream_key</span><span class="si">}</span><span class="s2">&gt; &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;with </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">payloads</span><span class="p">)</span><span class="si">}</span><span class="s2"> batches...&quot;</span>
         <span class="p">)</span>
         <span class="n">retries</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
@@ -316,7 +316,7 @@
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>  <span class="c1"># TODO: should be a specific append exception</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_retry_count</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">retries</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_retry_count</span><span class="p">:</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                        <span class="n">f</span><span class="s2">&quot;Retrying </span><span class="si">{retries}</span><span class="s2"> with max deley </span><span class="si">{self._retry_max_delay}</span><span class="s2">s...&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;Retrying </span><span class="si">{</span><span class="n">retries</span><span class="si">}</span><span class="s2"> with max deley </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_retry_max_delay</span><span class="si">}</span><span class="s2">s...&quot;</span>
                     <span class="p">)</span>
                     <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span>
                         <span class="nb">min</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="n">retries</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_retry_max_delay</span><span class="p">)</span>
