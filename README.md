@@ -29,7 +29,7 @@ $ python
 >>> async def main():
 ...     async with await insecure_client(host="127.0.0.1", port=6570) as client:
 ...         streams = await client.list_streams()
-...         print(streams)
+...         print(list(streams))
 ...
 >>> import asyncio
 >>> asyncio.run(main())
