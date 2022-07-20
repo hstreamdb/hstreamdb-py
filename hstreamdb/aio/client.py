@@ -29,8 +29,8 @@ def dec_api(f):
         except grpc.aio.AioRpcError as e:
             # The service is currently unavailable, so we choose another
             if e.code() == grpc.StatusCode.UNAVAILABLE:
-                logger.warning("Service unavailable, switching to another...")
-                client._switch_channel()
+                await client._switch_channel()
+                return await f(client, *args, **kargs)
             else:
                 raise e
 
@@ -38,32 +38,31 @@ def dec_api(f):
 
 
 class HStreamDBClient:
+    _stub: ApiGrpc.HStreamApiStub
+
     _DEFAULT_STREAM_KEY = "__default__"
     _TargetTy = str
 
-    # TODO: improvements
     _channels: {_TargetTy: Optional[grpc.aio.Channel]} = {}
-    # TODO
-    # _unvaliadble_channels: {_TargetTy: Optional[grpc.aio.Channel]} = {}
+
+    _current_target: _TargetTy
     _append_channels: {(str, str): _TargetTy} = {}
     _subscription_channels: {str: _TargetTy} = {}
-    _stub: ApiGrpc.HStreamApiStub
 
     _cons_target = staticmethod(lambda host, port: f"{host}:{port}")
 
     def __init__(self, host: str = "127.0.0.1", port: int = 6570):
-        """ """
-        target = self._cons_target(host, port)
+        self._current_target = self._cons_target(host, port)
         # TODO: secure_channel
-        _channel = grpc.aio.insecure_channel(target)
-        self._channels[target] = _channel
+        _channel = grpc.aio.insecure_channel(self._current_target)
+        self._channels[self._current_target] = _channel
         self._stub = ApiGrpc.HStreamApiStub(_channel)
 
-    async def init(self):
+    async def init_cluster_info(self):
         cluster_info = await self._stub.DescribeCluster(None)
         # TODO: check protocolVersion, serverVersion
         for node in cluster_info.serverNodes:
-            target = f"{node.host}:{node.port}"
+            target = self._cons_target(node.host, node.port)
             if target not in self._channels:
                 self._channels[target] = None
 
@@ -210,9 +209,30 @@ class HStreamDBClient:
 
     # -------------------------------------------------------------------------
 
-    # TODO
-    def _switch_channel(self):
-        pass
+    async def _switch_channel(self):
+        while True:
+            logger.warning(
+                f"Target {self._current_target} unavailable, switching to another..."
+            )
+            # remove unavailable target
+            self._channels.pop(self._current_target)
+
+            if not self._channels:
+                raise RuntimeError("No unavailable targets!")
+
+            # Now, self._channels should not be empty.
+            self._current_target = list(self._channels.keys())[0]
+            channel = self._get_channel(self._current_target)
+            self._stub = ApiGrpc.HStreamApiStub(channel)
+
+            try:
+                return await self.init_cluster_info()
+            except grpc.aio.AioRpcError as e:
+                # The service is currently unavailable, so we choose another
+                logger.warning(
+                    f"Fetch cluster info from {self._current_target} failed! \n {e}"
+                )
+                continue
 
     async def _lookup_stream(self, name, key=None):
         key = key or self._DEFAULT_STREAM_KEY
@@ -224,14 +244,7 @@ class HStreamDBClient:
 
         logger.debug(f"Find target for stream <{name},{key}>: {target}")
 
-        channel = self._channels.get(target)
-        if channel:
-            return channel
-        else:
-            # new channel
-            channel = grpc.aio.insecure_channel(target)
-            self._channels[target] = channel
-            return channel
+        return self._get_channel(target)
 
     @dec_api
     async def _lookup_stream_api(self, name, key):
@@ -253,14 +266,7 @@ class HStreamDBClient:
             f"Find target for subscription <{subscription_id}>: {target}"
         )
 
-        channel = self._channels.get(target)
-        if channel:
-            return channel
-        else:
-            # new channel
-            channel = grpc.aio.insecure_channel(target)
-            self._channels[target] = channel
-            return channel
+        return self._get_channel(target)
 
     @dec_api
     async def _lookup_subscription_api(self, subscription_id: str):
@@ -269,6 +275,16 @@ class HStreamDBClient:
         )
         assert r.subscriptionId == subscription_id
         return r.serverNode
+
+    def _get_channel(self, target):
+        channel = self._channels.get(target)
+        if channel:
+            return channel
+        else:
+            # new channel
+            channel = grpc.aio.insecure_channel(target)
+            self._channels[target] = channel
+            return channel
 
     # -------------------------------------------------------------------------
 
@@ -292,5 +308,5 @@ async def insecure_client(host="127.0.0.1", port=6570):
         A :class:`HStreamDBClient`
     """
     client = HStreamDBClient(host=host, port=port)
-    await client.init()
+    await client.init_cluster_info()
     return client
