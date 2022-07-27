@@ -67,3 +67,26 @@ class Record(NamedTuple):
     id: RecordId
     header: RecordHeader
     payload: Union[bytes, dict]
+
+
+class Shard(NamedTuple):
+    id: int
+    stream_name: str
+    start: int
+    end: int
+    epoch: int
+
+
+def shard_type_from(shard: ApiPb.Shard) -> Shard:
+    return Shard(
+        id=shard.shardId,
+        stream_name=shard.streamName,
+        start=int(shard.startHashRangeKey),
+        end=int(shard.endHashRangeKey),
+        epoch=shard.epoch,
+    )
+
+
+SpecialOffset = ApiPb.SpecialOffset
+
+ShardOffset = ApiPb.ShardOffset

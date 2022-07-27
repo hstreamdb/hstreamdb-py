@@ -1,36 +1,20 @@
+"""
+Simple tool for reading from hstreamdb, demonstrating usage of the read API.
+"""
 import asyncio
-from hstreamdb import insecure_client
+from hstreamdb import insecure_client, ShardOffset, SpecialOffset
 
 
-async def create_subscription_if_not_exist(client, subscription, stream_name):
-    ss = await client.list_subscriptions()
-    if subscription not in {s.subscription_id for s in ss}:
-        await client.create_subscription(
-            subscription, stream_name, ack_timeout=600, max_unacks=10000
-        )
-
-
-class Processing:
-    count = 0
-
-    async def __call__(self, ack_fun, stop_fun, rs_iter):
-        self.count += 1
-        rs = list(rs_iter)
-
-        print(f"{self.count} Recv {len(rs)} records")
-
-        if self.count >= 5:
-            await stop_fun()
-
-        print("send acks...")
-        await ack_fun(r.id for r in rs)
-
-
-async def main(host, port, subid, stream_name):
+async def main(host, port, stream_name, reader_id, max_records):
     async with await insecure_client(host, port) as client:
-        await create_subscription_if_not_exist(client, subid, stream_name)
-        consumer = client.new_consumer("test_consumer", subid, Processing())
-        await consumer.start()
+        offset = ShardOffset()
+        offset.SpecialOffset = SpecialOffset.EARLIEST
+        async with client.with_reader(
+            stream_name, reader_id, offset, 1000
+        ) as reader:
+            records = await reader.read(max_records)
+            for i, r in enumerate(records):
+                print(f"[{i}] payload: {r.payload}")
 
 
 if __name__ == "__main__":
@@ -48,11 +32,25 @@ if __name__ == "__main__":
         default="test_stream",
     )
     parser.add_argument(
-        "--subscription",
+        "--reader-id",
         type=str,
-        help="id of the subscription, default is 'test_subscription'",
-        default="test_subscription",
+        help="id of the reader, default is 'test_reader'",
+        default="test_reader",
+    )
+    parser.add_argument(
+        "--max-records",
+        type=int,
+        help="max records to read each time, default is 10",
+        default=10,
     )
 
     args = parser.parse_args()
-    asyncio.run(main(args.host, args.port, args.subscription, args.stream_name))
+    asyncio.run(
+        main(
+            args.host,
+            args.port,
+            args.stream_name,
+            args.reader_id,
+            args.max_records,
+        )
+    )

@@ -2,6 +2,7 @@
 Simple tool for writing to hstreamdb, demonstrating usage of the append API.
 """
 import asyncio
+import json
 from hstreamdb import insecure_client
 
 
@@ -12,11 +13,23 @@ async def create_stream_if_not_exist(client, name):
 
 
 async def main(host, port, stream_name):
+    print(
+        'You can input a string message or a json message.\n'
+        '-----------------------------\n'
+        'For example:\n'
+        'input> raw_msg\n'
+        'input> {"msg": "hello, world"}\n'
+        "-----------------------------"
+    )
     async with await insecure_client(host=host, port=port) as client:
         await create_stream_if_not_exist(client, stream_name)
-        for i in range(10):
-            print(f"Append {i}")
-            await client.append(stream_name, ["x"])
+        while True:
+            r = input("input> ")
+            try:
+                payload = json.loads(r)
+            except json.decoder.JSONDecodeError:
+                payload = r
+            await client.append(stream_name, [payload])
 
 
 if __name__ == "__main__":

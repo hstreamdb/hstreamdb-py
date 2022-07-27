@@ -1,18 +1,12 @@
 import asyncio
 import logging
-import json
-from typing import Any, Iterator, Iterable
+from typing import Any, Iterable
 
 import HStream.Server.HStreamApi_pb2 as ApiPb
 import HStream.Server.HStreamApi_pb2_grpc as ApiGrpc
-from hstreamdb.types import (
-    RecordId,
-    record_id_to,
-    record_id_from,
-    Record,
-    RecordHeader,
-    TimeStamp,
-)
+
+from hstreamdb.types import RecordId, record_id_to
+from hstreamdb.utils import parse_recived_records
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +40,7 @@ class Consumer:
                 await self._processing_func(
                     self._ack,
                     self._stop,
-                    self._parse_recived_record(r.receivedRecords),
+                    parse_recived_records(r.receivedRecords),
                 )
         except asyncio.exceptions.CancelledError:
             logger.info("Consumer is Cancelled")
@@ -82,41 +76,3 @@ class Consumer:
             consumerName=self._name,
             ackIds=[],
         )
-
-    @staticmethod
-    def _parse_recived_record(rs: [ApiPb.ReceivedRecord]) -> Iterator[Record]:
-        for r in rs:
-            record_id = record_id_from(r.recordId)
-
-            hstream_record = ApiPb.HStreamRecord()
-            hstream_record.ParseFromString(r.record)
-
-            record_header = RecordHeader(
-                publish_time=TimeStamp(
-                    seconds=hstream_record.header.publish_time.seconds,
-                    nanos=hstream_record.header.publish_time.nanos,
-                ),
-                key=(
-                    hstream_record.header.key
-                    if hstream_record.header.key
-                    else None
-                ),
-                attributes=hstream_record.header.attributes,
-            )
-
-            record_type = hstream_record.header.flag
-            record_payload = None
-            if record_type == ApiPb.HStreamRecordHeader.Flag.RAW:
-                record_payload = hstream_record.payload
-            elif record_type == ApiPb.HStreamRecordHeader.Flag.JSON:
-                try:
-                    record_payload = json.loads(hstream_record.payload)
-                except json.decoder.JSONDecodeError:
-                    logger.error("Can not decode this JSON payload!")
-            else:
-                raise NotImplementedError("Unsupported record type!")
-
-            if record_payload:
-                yield Record(
-                    id=record_id, header=record_header, payload=record_payload
-                )

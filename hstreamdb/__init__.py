@@ -8,6 +8,9 @@ from .types import (
     Record,
     Stream,
     Subscription,
+    Shard,
+    ShardOffset,
+    SpecialOffset,
 )
 
 __version__ = "0.1.1"
@@ -23,4 +26,7 @@ __all__ = [
     "Record",
     "Stream",
     "Subscription",
+    "Shard",
+    "ShardOffset",
+    "SpecialOffset",
 ]
