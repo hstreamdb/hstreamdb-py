@@ -2,6 +2,8 @@ import hashlib
 import logging
 from typing import Optional, List, Iterator
 import HStream.Server.HStreamApi_pb2 as ApiPb
+from google.protobuf.struct_pb2 import Struct
+from google.protobuf import json_format, message
 
 from hstreamdb.types import (
     Shard,
@@ -25,13 +27,15 @@ def cons_record(payload, key):
             payload=payload,
         )
     elif isinstance(payload, dict):
+        payload_struct = Struct()
+        payload_struct.update(payload)
         return ApiPb.HStreamRecord(
             header=ApiPb.HStreamRecordHeader(
                 flag=ApiPb.HStreamRecordHeader.Flag.JSON,
                 attributes=None,
                 key=key,
             ),
-            payload=json.dumps(payload).encode("utf-8"),
+            payload=payload_struct.SerializeToString(),
         )
     elif isinstance(payload, str):
         return cons_record(payload.encode("utf-8"), key)
@@ -63,9 +67,11 @@ def parse_recived_records(rs: List[ApiPb.ReceivedRecord]) -> Iterator[Record]:
             record_payload = hstream_record.payload
         elif record_type == ApiPb.HStreamRecordHeader.Flag.JSON:
             try:
-                record_payload = json.loads(hstream_record.payload)
-            except json.decoder.JSONDecodeError:
-                logger.error("Can not decode this JSON payload!")
+                payload_struct = Struct()
+                payload_struct.ParseFromString(hstream_record.payload)
+                record_payload = json_format.MessageToDict(payload_struct)
+            except message.DecodeError:
+                logger.error("Can not decode this payload!")
         else:
             raise NotImplementedError("Unsupported record type!")
 
