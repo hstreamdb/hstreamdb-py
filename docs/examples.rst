@@ -18,5 +18,8 @@ Buffered Appends
 Consumer
 --------
 
+.. literalinclude:: ../examples/subscription.py
+   :language: python
+
 .. literalinclude:: ../examples/read.py
    :language: python

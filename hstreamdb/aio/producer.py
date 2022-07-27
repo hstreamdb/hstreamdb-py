@@ -1,9 +1,28 @@
 import abc
 import asyncio
-from typing import Optional, Any, Callable, Awaitable, Iterable, Type
+from typing import (
+    Optional,
+    Any,
+    Callable,
+    Awaitable,
+    Iterator,
+    Type,
+    List,
+    Dict,
+    Sized,
+    Tuple,
+)
 import logging
 
-__all__ = ["PayloadsFull", "PayloadTooBig", "PayloadGroup", "BufferedProducer"]
+from hstreamdb.types import RecordId
+
+__all__ = [
+    "PayloadsFull",
+    "PayloadTooBig",
+    "AppendPayload",
+    "PayloadGroup",
+    "BufferedProducer",
+]
 
 logger = logging.getLogger(__name__)
 
@@ -49,15 +68,21 @@ class PayloadTooBig(Exception):
     pass
 
 
+class Payload(abc.ABC, Sized):
+    @abc.abstractmethod
+    def __len__(self):
+        ...
+
+
 class PayloadGroup:
-    _payloads: [bytes] = []
+    _payloads: List[Payload] = []
     _size: int = 0
     _lock: asyncio.Lock
 
     _maxsize: int
     _timer: Optional[Timer] = None
 
-    _flushing_payloads: [bytes] = []
+    _flushing_payloads: List[Payload] = []
     _flushing_size: int = 0
     _flush_done: asyncio.Event = asyncio.Event()
     _key: Any
@@ -71,7 +96,7 @@ class PayloadGroup:
         if maxtime > 0:
             self._timer = Timer(maxtime, self.flush)
 
-    async def append(self, payload: bytes):
+    async def append(self, payload: Payload):
         if not self._payloads and self._timer:
             # The first payload comes, set timer
             self._timer.start()
@@ -119,7 +144,7 @@ class PayloadGroup:
         self._flush_done.clear()
         self._notify_queue.put_nowait(self._key)
 
-    async def _append_nowait(self, payload: bytes):
+    async def _append_nowait(self, payload: Payload):
         """Put a payload into the payloads without blocking.
 
         If no free bytes is immediately available, raise PayloadsFull.
@@ -133,13 +158,6 @@ class PayloadGroup:
             self._payloads.append(payload)
             self._size += payload_size
 
-    async def _set_timer(self, delay):
-        async def loop():
-            asyncio.sleep(delay)
-            pass
-
-        asyncio.create_task(loop)
-
     def _upper(self, size):
         """Return True if there are not exceed maxsize bytes.
 
@@ -152,19 +170,34 @@ class PayloadGroup:
             return (self._size + size) > self._maxsize
 
 
-class BufferedProducer:
-    GroupKeyTy = (str, Optional[str])  # (stream_name, optional key)
-    _cons_group_key = staticmethod(lambda name, key=None: (name, key))
-    _uncons_group_key = staticmethod(
-        lambda group_key: (group_key[0], group_key[1])
-    )
+# -----------------------------------------------------------------------------
 
-    _group: {GroupKeyTy: PayloadGroup} = {}
+
+class AppendPayload(Payload):
+    payload: bytes
+    key: Optional[str]
+
+    def __init__(self, payload: bytes, key: Optional[str] = None):
+        self.payload = payload
+        self.key = key
+
+    def __len__(self):
+        return len(self.payload)
+
+
+class BufferedProducer:
+    StreamKeyId = int
+    GroupKeyTy = Tuple[str, StreamKeyId]  # (stream_name, shard_id)
+
+    _group: Dict[GroupKeyTy, PayloadGroup] = {}
 
     class AppendCallback(abc.ABC):
         @abc.abstractmethod
         def on_success(
-            self, stream_name: str, payloads: [bytes], stream_key: Optional[str]
+            self,
+            stream_name: str,
+            payloads: List[AppendPayload],
+            stream_keyid: int,
         ):
             ...
 
@@ -172,8 +205,8 @@ class BufferedProducer:
         def on_fail(
             self,
             stream_name: str,
-            payloads: [bytes],
-            stream_key: Optional[str],
+            payloads: List[AppendPayload],
+            shard_id: int,
             e: Exception,
         ):
             ...
@@ -181,7 +214,10 @@ class BufferedProducer:
     def __init__(
         self,
         flush_coro: Callable[
-            [str, Iterable[Any], Optional[str]], Awaitable[None]
+            [str, List[AppendPayload], int], Awaitable[Iterator[RecordId]]
+        ],
+        find_stream_key_id_coro: Callable[
+            [str, Optional[str]], Awaitable[StreamKeyId]
         ],
         append_callback: Optional[Type[AppendCallback]] = None,
         size_trigger=0,
@@ -197,6 +233,7 @@ class BufferedProducer:
         self._retry_count = retry_count
         self._retry_max_delay = retry_max_delay
         self._flush_coro = flush_coro
+        self._find_stream_key_id_coro = find_stream_key_id_coro
         self._append_callback = append_callback
         self._queues = [asyncio.Queue() for _ in range(workers)]
         self._workers = [
@@ -207,7 +244,8 @@ class BufferedProducer:
     async def append(
         self, stream_name: str, payload: bytes, key: Optional[str] = None
     ):
-        group_key = self._cons_group_key(stream_name, key)
+        group_key = await self._fetch_group_key(stream_name, key)
+        bpayload = AppendPayload(payload, key=key)
 
         payloads: PayloadGroup
         if group_key not in self._group:
@@ -221,14 +259,15 @@ class BufferedProducer:
         else:
             payloads = self._group[group_key]
 
-        await payloads.append(payload)
+        await payloads.append(bpayload)
 
-    async def flush(self, stream_name: str, key: Optional[str] = None):
-        group_key = self._cons_group_key(stream_name, key)
-        payloads = self._group.get(group_key)
-        if not payloads:
-            raise ValueError("No such payloads!")
-        await payloads.flush()
+    async def flush(self, stream_name: str, shard_id: int):
+        group_key = self._cons_group_key(stream_name, shard_id)
+        self._flush(group_key)
+
+    async def flush_by_key(self, stream_name: str, key: Optional[str] = None):
+        group_key = await self._fetch_group_key(stream_name, key)
+        self._flush(group_key)
 
     async def flushall(self):
         for _, payloads in self._group.items():
@@ -256,6 +295,14 @@ class BufferedProducer:
         await self.close()
         await self.wait()
 
+    # -------------------------------------------------------------------------
+
+    async def _flush(self, group_key):
+        payloads = self._group.get(group_key)
+        if not payloads:
+            raise ValueError("No such payloads!")
+        await payloads.flush()
+
     async def _loop_queue(self, queue):
         while True:
             group_key = await queue.get()
@@ -263,21 +310,21 @@ class BufferedProducer:
                 break
 
             payload_group = self._group[group_key]
-            stream_name, stream_key = self._uncons_group_key(group_key)
+            stream_name, stream_keyid = self._uncons_group_key(group_key)
 
-            await self._flusing_worker(stream_name, payload_group, stream_key)
+            await self._flusing_worker(stream_name, payload_group, stream_keyid)
             queue.task_done()
 
-    async def _flusing_worker(self, stream_name, payload_group, stream_key):
+    async def _flusing_worker(self, stream_name, payload_group, stream_keyid):
         payloads, _size = payload_group.pop()
         logger.debug(
-            f"Flushing stream <{stream_name},{stream_key}> "
+            f"Flushing stream <{stream_name},{stream_keyid}> "
             f"with {len(payloads)} batches..."
         )
         retries = 0
         while True:
             try:
-                await self._flush_coro(stream_name, payloads, stream_key)
+                await self._flush_coro(stream_name, payloads, stream_keyid)
                 await payload_group.post_flush()
             except Exception as e:  # TODO: should be a specific append exception
                 if self._retry_count < 0 or retries < self._retry_count:
@@ -294,7 +341,7 @@ class BufferedProducer:
                 else:
                     if self._append_callback:
                         return self._append_callback.on_fail(
-                            stream_name, payloads, stream_key, e
+                            stream_name, payloads, stream_keyid, e
                         )
                     else:
                         raise e
@@ -302,8 +349,20 @@ class BufferedProducer:
 
         if self._append_callback:
             return self._append_callback.on_success(
-                stream_name, payloads, stream_key
+                stream_name, payloads, stream_keyid
             )
 
     def _find_queue(self, group_key):
         return self._queues[abs(hash(group_key)) % len(self._queues)]
+
+    async def _fetch_group_key(self, name, key):
+        shard_id = await self._find_stream_key_id_coro(name, key)
+        return self._cons_group_key(name, shard_id)
+
+    @staticmethod
+    def _cons_group_key(name, shard_id):
+        return (name, shard_id)
+
+    @staticmethod
+    def _uncons_group_key(group_key):
+        return (group_key[0], group_key[1])

@@ -1,19 +1,31 @@
 import functools
-from typing import Optional, Any, Iterable, Type, Iterator
+from typing import Optional, Any, Iterable, Type, Iterator, Dict, List, Tuple
+import types
 import grpc
 import logging
+from contextlib import asynccontextmanager
 
 import HStream.Server.HStreamApi_pb2 as ApiPb
 import HStream.Server.HStreamApi_pb2_grpc as ApiGrpc
-from hstreamdb.aio.producer import BufferedProducer
+from hstreamdb.aio.producer import BufferedProducer, AppendPayload
 from hstreamdb.aio.consumer import Consumer
 from hstreamdb.types import (
     RecordId,
+    Record,
     record_id_from,
     Stream,
     stream_type_from,
     Subscription,
     subscription_type_from,
+    Shard,
+    shard_type_from,
+    SpecialOffset,
+    ShardOffset,
+)
+from hstreamdb.utils import (
+    cons_record,
+    find_shard_id,
+    parse_recived_records,
 )
 
 __all__ = ["insecure_client", "HStreamDBClient"]
@@ -40,14 +52,16 @@ def dec_api(f):
 class HStreamDBClient:
     _stub: ApiGrpc.HStreamApiStub
 
-    _DEFAULT_STREAM_KEY = "__default__"
     _TargetTy = str
 
-    _channels: {_TargetTy: Optional[grpc.aio.Channel]} = {}
+    _channels: Dict[_TargetTy, Optional[grpc.aio.Channel]] = {}
 
     _current_target: _TargetTy
-    _append_channels: {(str, str): _TargetTy} = {}
-    _subscription_channels: {str: _TargetTy} = {}
+    # {(stream_name, shard_id)}
+    _append_channels: Dict[Tuple[str, int], _TargetTy] = {}
+    _subscription_channels: Dict[str, _TargetTy] = {}
+    _reader_channels: Dict[str, _TargetTy] = {}
+    _shards_info: Dict[str, List[Shard]] = {}
 
     _cons_target = staticmethod(lambda host, port: f"{host}:{port}")
 
@@ -69,9 +83,16 @@ class HStreamDBClient:
     # -------------------------------------------------------------------------
 
     @dec_api
-    async def create_stream(self, name, replication_factor):
+    async def create_stream(
+        self, name, replication_factor=1, backlog=0, shard=1
+    ):
         await self._stub.CreateStream(
-            ApiPb.Stream(streamName=name, replicationFactor=replication_factor)
+            ApiPb.Stream(
+                streamName=name,
+                replicationFactor=replication_factor,
+                backlogDuration=backlog,
+                shardCount=shard,
+            )
         )
 
     @dec_api
@@ -105,35 +126,12 @@ class HStreamDBClient:
             Appended RecordIds generator
         """
 
-        def cons_record(payload):
-            if isinstance(payload, bytes):
-                return ApiPb.HStreamRecord(
-                    header=ApiPb.HStreamRecordHeader(
-                        flag=ApiPb.HStreamRecordHeader.Flag.RAW,
-                        attributes=None,
-                        key=key,
-                    ),
-                    payload=payload,
-                )
-            elif isinstance(payload, dict):
-                return ApiPb.HStreamRecord(
-                    header=ApiPb.HStreamRecordHeader(
-                        flag=ApiPb.HStreamRecordHeader.Flag.JSON,
-                        attributes=None,
-                        key=key,
-                    ),
-                    payload=payload,
-                )
-            elif isinstance(payload, str):
-                return cons_record(payload.encode("utf-8"))
-            else:
-                raise ValueError("Invalid payload type!")
-
-        channel = await self._lookup_stream(name, key=key)
+        channel = await self._lookup_append(name, key, None)
         stub = ApiGrpc.HStreamApiStub(channel)
         r = await stub.Append(
             ApiPb.AppendRequest(
-                streamName=name, records=map(cons_record, payloads)
+                streamName=name,
+                records=map(lambda p: cons_record(p, key), payloads),
             )
         )
 
@@ -149,7 +147,8 @@ class HStreamDBClient:
         retry_max_delay=60,
     ):
         return BufferedProducer(
-            self.append,
+            self._append_with_shard,
+            self._find_shard_id,
             append_callback=append_callback,
             size_trigger=size_trigger,
             time_trigger=time_trigger,
@@ -159,12 +158,26 @@ class HStreamDBClient:
         )
 
     @dec_api
+    async def list_shards(self, stream_name) -> [Shard]:
+        # FIXME: what if shards_info can be changed?
+        shards = self._shards_info.get(stream_name)
+        if not shards:
+            r = await self._stub.ListShards(
+                ApiPb.ListShardsRequest(streamName=stream_name)
+            )
+            shards = [shard_type_from(s) for s in r.shards]
+            self._shards_info[stream_name] = shards
+
+        return shards
+
+    @dec_api
     async def create_subscription(
         self,
         subscription_id: str,
         stream_name: str,
         ack_timeout: int = 600,  # 10min
         max_unacks: int = 10000,
+        offset: SpecialOffset = SpecialOffset.LATEST,
     ):
         await self._stub.CreateSubscription(
             ApiPb.Subscription(
@@ -172,6 +185,7 @@ class HStreamDBClient:
                 streamName=stream_name,
                 ackTimeoutSeconds=ack_timeout,
                 maxUnackedRecords=max_unacks,
+                offset=offset,
             )
         )
 
@@ -207,6 +221,173 @@ class HStreamDBClient:
             processing_func,
         )
 
+    @asynccontextmanager
+    async def with_reader(
+        self,
+        stream_name: str,
+        reader_id: str,
+        shard_offset: ShardOffset,
+        timeout: int,
+        shard_id: Optional[int] = None,
+        stream_key: Optional[str] = None,
+    ):
+        await self.create_reader(
+            stream_name,
+            reader_id,
+            shard_offset,
+            timeout,
+            shard_id=shard_id,
+            stream_key=stream_key,
+        )
+        try:
+            obj = types.SimpleNamespace()
+            obj.read = lambda max_records: self.read_reader(
+                reader_id, max_records
+            )
+            yield obj
+        finally:
+            await self.delete_reader(reader_id)
+
+    @dec_api
+    async def create_reader(
+        self,
+        stream_name: str,
+        reader_id: str,
+        shard_offset: ShardOffset,
+        timeout: int,
+        shard_id: Optional[int] = None,
+        stream_key: Optional[str] = None,
+    ):
+        """Create a reader.
+
+        If the 'shard_id' is None, then use the shard which the optional
+        'stream_key' corresponds.
+        """
+        if shard_id is None:
+            shard_id = await self._find_shard_id(stream_name, key=stream_key)
+        return await self._stub.CreateShardReader(
+            ApiPb.CreateShardReaderRequest(
+                streamName=stream_name,
+                shardId=shard_id,
+                shardOffset=shard_offset,
+                readerId=reader_id,
+                timeout=timeout,
+            )
+        )
+
+    async def read_reader(
+        self, reader_id: str, max_records: str
+    ) -> Iterator[Record]:
+        channel = await self._lookup_reader(reader_id)
+        stub = ApiGrpc.HStreamApiStub(channel)
+        r = await stub.ReadShard(
+            ApiPb.ReadShardRequest(readerId=reader_id, maxRecords=max_records)
+        )
+
+        return parse_recived_records(r.receivedRecords)
+
+    @dec_api
+    async def delete_reader(self, reader_id: str) -> None:
+        await self._stub.DeleteShardReader(
+            ApiPb.DeleteShardReaderRequest(readerId=reader_id)
+        )
+        return None
+
+    # -------------------------------------------------------------------------
+
+    async def _find_shard_id(self, stream_name, key=None) -> int:
+        shards = await self.list_shards(stream_name)
+        return find_shard_id(shards, key=key)
+
+    async def _append_with_shard(
+        self,
+        name: str,
+        payloads: List[AppendPayload],
+        shard_id: int,
+    ) -> Iterator[RecordId]:
+        channel = await self._lookup_append(name, None, shard_id)
+        stub = ApiGrpc.HStreamApiStub(channel)
+        r = await stub.Append(
+            ApiPb.AppendRequest(
+                streamName=name,
+                records=map(lambda p: cons_record(p.payload, p.key), payloads),
+            )
+        )
+
+        return (record_id_from(x) for x in r.recordIds)
+
+    async def _lookup_append(self, name, key, shard_id):
+        if shard_id is not None:
+            keyid = shard_id
+            # NOTE: do not use this 'key', the 'key' param has no means.
+            del key
+        else:
+            keyid = await self._find_shard_id(name, key=key)
+
+        target = self._append_channels.get((name, keyid))
+        if not target:
+            node = await self._lookup_append_api(keyid)
+            target = self._cons_target(node.host, node.port)
+            self._append_channels[(name, keyid)] = target
+
+        if not shard_id:
+            logger.debug(f"Find target for stream <{name},{key}>: {target}")
+        else:
+            logger.debug(
+                f"Find target for stream <{name}> with shard id <{shard_id}>: {target}"
+            )
+
+        return self._get_channel(target)
+
+    async def _lookup_subscription(self, subscription_id: str):
+        target = self._subscription_channels.get(subscription_id)
+        if not target:
+            node = await self._lookup_subscription_api(subscription_id)
+            target = self._cons_target(node.host, node.port)
+            self._subscription_channels[subscription_id] = target
+
+        logger.debug(
+            f"Find target for subscription <{subscription_id}>: {target}"
+        )
+
+        return self._get_channel(target)
+
+    async def _lookup_reader(self, reader_id: str):
+        target = self._reader_channels.get(reader_id)
+        if not target:
+            node = await self._lookup_reader_api(reader_id)
+            target = self._cons_target(node.host, node.port)
+            self._reader_channels[reader_id] = target
+
+        logger.debug(f"Find target for reader <{reader_id}>: {target}")
+
+        return self._get_channel(target)
+
+    @dec_api
+    async def _lookup_append_api(self, shard_id):
+        r = await self._stub.LookupShard(
+            ApiPb.LookupShardRequest(shardId=shard_id)
+        )
+        # there is no reason that returned value does not equal to requested.
+        assert r.shardId == shard_id
+        return r.serverNode
+
+    @dec_api
+    async def _lookup_subscription_api(self, subscription_id: str):
+        r = await self._stub.LookupSubscription(
+            ApiPb.LookupSubscriptionRequest(subscriptionId=subscription_id)
+        )
+        assert r.subscriptionId == subscription_id
+        return r.serverNode
+
+    @dec_api
+    async def _lookup_reader_api(self, reader_id: str):
+        r = await self._stub.LookupShardReader(
+            ApiPb.LookupShardReaderRequest(readerId=reader_id)
+        )
+        assert r.readerId == reader_id
+        return r.serverNode
+
     # -------------------------------------------------------------------------
 
     async def _switch_channel(self):
@@ -233,48 +414,6 @@ class HStreamDBClient:
                     f"Fetch cluster info from {self._current_target} failed! \n {e}"
                 )
                 continue
-
-    async def _lookup_stream(self, name, key=None):
-        key = key or self._DEFAULT_STREAM_KEY
-        target = self._append_channels.get((name, key))
-        if not target:
-            node = await self._lookup_stream_api(name, key)
-            target = self._cons_target(node.host, node.port)
-            self._append_channels[(name, key)] = target
-
-        logger.debug(f"Find target for stream <{name},{key}>: {target}")
-
-        return self._get_channel(target)
-
-    @dec_api
-    async def _lookup_stream_api(self, name, key):
-        r = await self._stub.LookupStream(
-            ApiPb.LookupStreamRequest(streamName=name, orderingKey=key)
-        )
-        # there is no reason that returned value does not equal to requested.
-        assert r.streamName == name and r.orderingKey == key
-        return r.serverNode
-
-    async def _lookup_subscription(self, subscription_id: str):
-        target = self._subscription_channels.get(subscription_id)
-        if not target:
-            node = await self._lookup_subscription_api(subscription_id)
-            target = self._cons_target(node.host, node.port)
-            self._subscription_channels[subscription_id] = target
-
-        logger.debug(
-            f"Find target for subscription <{subscription_id}>: {target}"
-        )
-
-        return self._get_channel(target)
-
-    @dec_api
-    async def _lookup_subscription_api(self, subscription_id: str):
-        r = await self._stub.LookupSubscription(
-            ApiPb.LookupSubscriptionRequest(subscriptionId=subscription_id)
-        )
-        assert r.subscriptionId == subscription_id
-        return r.serverNode
 
     def _get_channel(self, target):
         channel = self._channels.get(target)
