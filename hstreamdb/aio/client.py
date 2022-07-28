@@ -84,14 +84,22 @@ class HStreamDBClient:
 
     @dec_api
     async def create_stream(
-        self, name, replication_factor=1, backlog=0, shard=1
+        self, name, replication_factor=1, backlog=0, shard_count=1
     ):
+        """
+        Args:
+            name: stream name
+            replication_factor: how stream can be replicated across nodes in
+                                the cluster
+            backlog: how long streams of HStreamDB retain records after being
+                     appended, in senconds.
+        """
         await self._stub.CreateStream(
             ApiPb.Stream(
                 streamName=name,
                 replicationFactor=replication_factor,
                 backlogDuration=backlog,
-                shardCount=shard,
+                shardCount=shard_count,
             )
         )
 
@@ -126,11 +134,12 @@ class HStreamDBClient:
             Appended RecordIds generator
         """
 
-        channel = await self._lookup_append(name, key, None)
+        shard_id, channel = await self._lookup_append(name, key, None)
         stub = ApiGrpc.HStreamApiStub(channel)
         r = await stub.Append(
             ApiPb.AppendRequest(
                 streamName=name,
+                shardId=shard_id,
                 records=map(lambda p: cons_record(p, key), payloads),
             )
         )
@@ -305,11 +314,12 @@ class HStreamDBClient:
         payloads: List[AppendPayload],
         shard_id: int,
     ) -> Iterator[RecordId]:
-        channel = await self._lookup_append(name, None, shard_id)
+        shard_id, channel = await self._lookup_append(name, None, shard_id)
         stub = ApiGrpc.HStreamApiStub(channel)
         r = await stub.Append(
             ApiPb.AppendRequest(
                 streamName=name,
+                shardId=shard_id,
                 records=map(lambda p: cons_record(p.payload, p.key), payloads),
             )
         )
@@ -337,7 +347,7 @@ class HStreamDBClient:
                 f"Find target for stream <{name}> with shard id <{shard_id}>: {target}"
             )
 
-        return self._get_channel(target)
+        return keyid, self._get_channel(target)
 
     async def _lookup_subscription(self, subscription_id: str):
         target = self._subscription_channels.get(subscription_id)

@@ -9,7 +9,7 @@ from hstreamdb import insecure_client
 async def create_stream_if_not_exist(client, name):
     ss = await client.list_streams()
     if name not in {s.name for s in ss}:
-        await client.create_stream(name, 1)
+        await client.create_stream(name)
 
 
 async def main(host, port, stream_name):
