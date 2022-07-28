@@ -9,10 +9,10 @@ async def create_stream_if_not_exist(client, name):
 
 
 class AppendCallback(BufferedProducer.AppendCallback):
-    def on_success(self, stream_name, payloads, stream_key):
+    def on_success(self, stream_name, payloads, stream_keyid: int):
         print(f"Append success with {len(payloads)} batches.")
 
-    def on_fail(self, stream_name, payloads, stream_key, e):
+    def on_fail(self, stream_name, payloads, stream_keyid, e):
         print("Append failed!")
         print(e)
 

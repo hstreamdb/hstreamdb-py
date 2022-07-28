@@ -24,11 +24,10 @@ class Processing:
         rs = list(rs_iter)
         for r in rs:
             self.count += 1
-            if self.max_count > 0 and self.count > self.max_count:
+            print(f"[{self.count}] Receive: {r}")
+            if self.max_count > 0 and self.count >= self.max_count:
                 await stop_fun()
                 break
-            else:
-                print(f"[{self.count}] Receive: {r}")
 
         await ack_fun(r.id for r in rs)
 

@@ -8,7 +8,7 @@ from hstreamdb import insecure_client, ShardOffset, SpecialOffset
 async def main(host, port, stream_name, reader_id, max_records):
     async with await insecure_client(host, port) as client:
         offset = ShardOffset()
-        offset.SpecialOffset = SpecialOffset.EARLIEST
+        offset.specialOffset = SpecialOffset.EARLIEST
         async with client.with_reader(
             stream_name, reader_id, offset, 1000
         ) as reader:

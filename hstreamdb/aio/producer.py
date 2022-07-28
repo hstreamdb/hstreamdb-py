@@ -174,6 +174,9 @@ class PayloadGroup:
 
 
 class AppendPayload(Payload):
+    # TODO: support dict
+    #
+    # Typically payload can be bytes, str, or dict. But for now, dict is unsupported
     payload: bytes
     key: Optional[str]
 
@@ -206,7 +209,7 @@ class BufferedProducer:
             self,
             stream_name: str,
             payloads: List[AppendPayload],
-            shard_id: int,
+            stream_keyid: int,
             e: Exception,
         ):
             ...
