@@ -1,4 +1,6 @@
 # [common]
+
+# https://github.com/hstreamdb/hstreamdb-py/blob/main/examples/snippets/guides.py
 import asyncio
 import hstreamdb
 import os
@@ -10,6 +12,7 @@ stream_name = "your_stream"
 subscription = "your_subscription"
 
 
+# Run: asyncio.run(main(your_async_function))
 async def main(*funcs):
     async with await hstreamdb.insecure_client(host=host, port=port) as client:
         for f in funcs:
