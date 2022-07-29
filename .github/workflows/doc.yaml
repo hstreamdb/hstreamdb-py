@@ -7,11 +7,28 @@ on:
   pull_request:
     branches: [main]
 
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: "doc"
+  cancel-in-progress: true
+
 jobs:
   build:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: "recursive"
 
@@ -27,22 +44,18 @@ jobs:
           pip install -U sphinx
 
       - name: build docs
-        run: cd docs && make html && mv _build/html /tmp/html
+        run: cd docs && make html
 
-      - name: push to gh-pages
+      - name: setup pages
+        uses: actions/configure-pages@v1
+
+      - name: upload artifact
         if: ${{ github.event_name == 'push' }}
-        run: |
-          git config user.name "GithubAction"
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: 'docs/_build/html'
 
-          git fetch --all
-          SRC_HEAD=$(git rev-parse --short HEAD)
-          git restore .
-          git checkout -b gh-pages origin/gh-pages
-          rm -rf ./*
-
-          cp -a /tmp/html/. ./
-          # make sure there is a nojekyll file the root of pages to bypass Jekyll processing
-          touch .nojekyll
-          git add -A
-          git commit -m "Published $SRC_HEAD"
-          git push origin gh-pages -f
+      - name: deploy to github pages
+        if: ${{ github.event_name == 'push' }}
+        id: deployment
+        uses: actions/deploy-pages@main
