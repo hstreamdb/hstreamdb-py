@@ -47,6 +47,7 @@ jobs:
         run: cd docs && make html
 
       - name: setup pages
+        if: ${{ github.event_name == 'push' }}
         uses: actions/configure-pages@v1
 
       - name: upload artifact

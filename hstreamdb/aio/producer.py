@@ -11,10 +11,14 @@ from typing import (
     Dict,
     Sized,
     Tuple,
+    Union,
 )
 import logging
 
+import HStream.Server.HStreamApi_pb2 as ApiPb
+
 from hstreamdb.types import RecordId
+from hstreamdb.utils import encode_payload
 
 __all__ = [
     "PayloadsFull",
@@ -174,18 +178,23 @@ class PayloadGroup:
 
 
 class AppendPayload(Payload):
-    # TODO: support dict
-    #
-    # Typically payload can be bytes, str, or dict. But for now, dict is unsupported
-    payload: bytes
+    payload: Union[bytes, str, Dict[Any, Any]]
     key: Optional[str]
 
-    def __init__(self, payload: bytes, key: Optional[str] = None):
+    _payload_bin: bytes
+    _payload_type: ApiPb.HStreamRecordHeader.Flag
+
+    def __init__(
+        self,
+        payload: Union[bytes, str, Dict[Any, Any]],
+        key: Optional[str] = None,
+    ):
         self.payload = payload
+        self._payload_bin, self._payload_type = encode_payload(self.payload)
         self.key = key
 
     def __len__(self):
-        return len(self.payload)
+        return len(self._payload_bin)
 
 
 class BufferedProducer:
@@ -245,7 +254,10 @@ class BufferedProducer:
         ]
 
     async def append(
-        self, stream_name: str, payload: bytes, key: Optional[str] = None
+        self,
+        stream_name: str,
+        payload: Union[bytes, str, Dict[Any, Any]],
+        key: Optional[str] = None,
     ):
         group_key = await self._fetch_group_key(stream_name, key)
         bpayload = AppendPayload(payload, key=key)
@@ -266,11 +278,11 @@ class BufferedProducer:
 
     async def flush(self, stream_name: str, shard_id: int):
         group_key = self._cons_group_key(stream_name, shard_id)
-        self._flush(group_key)
+        await self._flush(group_key)
 
     async def flush_by_key(self, stream_name: str, key: Optional[str] = None):
         group_key = await self._fetch_group_key(stream_name, key)
-        self._flush(group_key)
+        await self._flush(group_key)
 
     async def flushall(self):
         for _, payloads in self._group.items():
