@@ -16,31 +16,37 @@ from hstreamdb.types import (
 logger = logging.getLogger(__name__)
 
 
-def cons_record(payload, key):
-    if isinstance(payload, bytes):
-        return ApiPb.HStreamRecord(
-            header=ApiPb.HStreamRecordHeader(
-                flag=ApiPb.HStreamRecordHeader.Flag.RAW,
-                attributes=None,
-                key=key,
-            ),
-            payload=payload,
-        )
+def encode_payload(payload):
+    raw_type = ApiPb.HStreamRecordHeader.Flag.RAW
+    hrecord_type = ApiPb.HStreamRecordHeader.Flag.JSON
+
+    # NOTE: if payload is a tuple, its contents must be
+    # (encoded_bytes, HStreamRecordHeader_Flag). We do not check it but it requires.
+
+    if isinstance(payload, tuple):  # alreay encoded, ignore
+        return payload
+    elif isinstance(payload, bytes):
+        return payload, raw_type
     elif isinstance(payload, dict):
         payload_struct = Struct()
         payload_struct.update(payload)
-        return ApiPb.HStreamRecord(
-            header=ApiPb.HStreamRecordHeader(
-                flag=ApiPb.HStreamRecordHeader.Flag.JSON,
-                attributes=None,
-                key=key,
-            ),
-            payload=payload_struct.SerializeToString(),
-        )
+        return payload_struct.SerializeToString(), hrecord_type
     elif isinstance(payload, str):
-        return cons_record(payload.encode("utf-8"), key)
+        return payload.encode("utf-8"), raw_type
     else:
         raise ValueError("Invalid payload type!")
+
+
+def cons_record(payload, key):
+    _payload, _payload_type = encode_payload(payload)
+    return ApiPb.HStreamRecord(
+        header=ApiPb.HStreamRecordHeader(
+            flag=_payload_type,
+            attributes=None,
+            key=key,
+        ),
+        payload=_payload,
+    )
 
 
 def parse_recived_records(rs: List[ApiPb.ReceivedRecord]) -> Iterator[Record]:

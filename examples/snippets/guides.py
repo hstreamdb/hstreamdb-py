@@ -104,8 +104,11 @@ async def append_records(client):
 
 # [buffered-append-records]
 class AppendCallback(hstreamdb.BufferedProducer.AppendCallback):
+    count = 0
+
     def on_success(self, stream_name, payloads, stream_keyid):
-        print(f"Append success with {len(payloads)} batches.")
+        self.count += 1
+        print(f"Batch {self.count}: Append success with {len(payloads)} payloads.")
 
     def on_fail(self, stream_name, payloads, stream_keyid, e):
         print("Append failed!")
@@ -122,6 +125,7 @@ async def buffered_append_records(client):
 
     for i in range(50):
         await p.append(stream_name, b"some_raw_binary_bytes")
+        await p.append(stream_name, {"msg": "hello"})
 
     await p.wait_and_close()
 

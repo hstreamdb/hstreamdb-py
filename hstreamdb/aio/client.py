@@ -167,7 +167,7 @@ class HStreamDBClient:
         )
 
     @dec_api
-    async def list_shards(self, stream_name) -> [Shard]:
+    async def list_shards(self, stream_name) -> List[Shard]:
         # FIXME: what if shards_info can be changed?
         shards = self._shards_info.get(stream_name)
         if not shards:
@@ -320,7 +320,12 @@ class HStreamDBClient:
             ApiPb.AppendRequest(
                 streamName=name,
                 shardId=shard_id,
-                records=map(lambda p: cons_record(p.payload, p.key), payloads),
+                records=map(
+                    lambda p: cons_record(
+                        (p._payload_bin, p._payload_type), p.key
+                    ),
+                    payloads,
+                ),
             )
         )
 
