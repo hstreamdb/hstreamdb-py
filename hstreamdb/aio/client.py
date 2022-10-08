@@ -4,6 +4,7 @@ import types
 import grpc
 import logging
 from contextlib import asynccontextmanager
+import itertools
 
 import HStream.Server.HStreamApi_pb2 as ApiPb
 import HStream.Server.HStreamApi_pb2_grpc as ApiGrpc
@@ -23,9 +24,10 @@ from hstreamdb.types import (
     ShardOffset,
 )
 from hstreamdb.utils import (
-    cons_record,
     find_shard_id,
-    parse_recived_records,
+    decode_records,
+    encode_records,
+    encode_records_from_append_payload,
 )
 
 __all__ = ["insecure_client", "HStreamDBClient"]
@@ -133,17 +135,15 @@ class HStreamDBClient:
         Returns:
             Appended RecordIds generator
         """
-
         shard_id, channel = await self._lookup_append(name, key, None)
         stub = ApiGrpc.HStreamApiStub(channel)
         r = await stub.Append(
             ApiPb.AppendRequest(
                 streamName=name,
                 shardId=shard_id,
-                records=map(lambda p: cons_record(p, key), payloads),
+                records=encode_records(payloads, key=key),
             )
         )
-
         return (record_id_from(x) for x in r.recordIds)
 
     def new_producer(
@@ -289,11 +289,13 @@ class HStreamDBClient:
     ) -> Iterator[Record]:
         channel = await self._lookup_reader(reader_id)
         stub = ApiGrpc.HStreamApiStub(channel)
-        r = await stub.ReadShard(
+        resp = await stub.ReadShard(
             ApiPb.ReadShardRequest(readerId=reader_id, maxRecords=max_records)
         )
 
-        return parse_recived_records(r.receivedRecords)
+        return itertools.chain.from_iterable(
+            decode_records(r) for r in resp.receivedRecords
+        )
 
     @dec_api
     async def delete_reader(self, reader_id: str) -> None:
@@ -320,12 +322,7 @@ class HStreamDBClient:
             ApiPb.AppendRequest(
                 streamName=name,
                 shardId=shard_id,
-                records=map(
-                    lambda p: cons_record(
-                        (p._payload_bin, p._payload_type), p.key
-                    ),
-                    payloads,
-                ),
+                records=encode_records_from_append_payload(payloads),
             )
         )
 

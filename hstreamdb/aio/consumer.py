@@ -6,7 +6,7 @@ import HStream.Server.HStreamApi_pb2 as ApiPb
 import HStream.Server.HStreamApi_pb2_grpc as ApiGrpc
 
 from hstreamdb.types import RecordId, record_id_to
-from hstreamdb.utils import parse_recived_records
+from hstreamdb.utils import decode_records
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ class Consumer:
                 await self._processing_func(
                     self._ack,
                     self._stop,
-                    parse_recived_records(r.receivedRecords),
+                    decode_records(r.receivedRecords),
                 )
         except asyncio.exceptions.CancelledError:
             logger.info("Consumer is Cancelled")

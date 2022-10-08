@@ -37,7 +37,7 @@ def encode_payload(payload):
         raise ValueError("Invalid payload type!")
 
 
-def cons_record(payload, key):
+def _cons_record(payload, key):
     _payload, _payload_type = encode_payload(payload)
     return ApiPb.HStreamRecord(
         header=ApiPb.HStreamRecordHeader(
@@ -49,17 +49,56 @@ def cons_record(payload, key):
     )
 
 
-def parse_recived_records(rs: List[ApiPb.ReceivedRecord]) -> Iterator[Record]:
-    for r in rs:
-        record_id = record_id_from(r.recordId)
+def _encode_records(records: List[ApiPb.HStreamRecord]) -> ApiPb.BatchedRecord:
+    records_bs = ApiPb.BatchHStreamRecords(records=records).SerializeToString()
+    return ApiPb.BatchedRecord(
+        compressionType=ApiPb.CompressionType.Value(
+            "None"
+        ),  # TODO: Compression
+        batchSize=len(records),
+        payload=records_bs,
+    )
 
-        hstream_record = ApiPb.HStreamRecord()
-        hstream_record.ParseFromString(r.record)
+
+def encode_records(payloads, key=None) -> ApiPb.BatchedRecord:
+    return _encode_records([_cons_record(p, key) for p in payloads])
+
+
+def encode_records_from_append_payload(payloads) -> ApiPb.BatchedRecord:
+    return _encode_records(
+        [
+            _cons_record((p._payload_bin, p._payload_type), p.key)
+            for p in payloads
+        ]
+    )
+
+
+def decode_records(record_: ApiPb.ReceivedRecord) -> Iterator[Record]:
+    record_ids = record_.recordIds
+    batched_record = record_.record
+
+    # TODO
+    if batched_record.compressionType != ApiPb.CompressionType.Value("None"):
+        raise NotImplementedError("Compression not support!")
+    payload_bytes = batched_record.payload
+
+    try:
+        batched_hstream_record = ApiPb.BatchHStreamRecords()
+        batched_hstream_record.ParseFromString(payload_bytes)
+        hstream_records = batched_hstream_record.records
+    except message.DecodeError:
+        logger.error("Can not decode this BatchHStreamRecords!")
+
+    if len(record_ids) != len(hstream_records):
+        raise KeyError("Invalid BatchHStreamRecords: mismatch of size")
+
+    for rid, hstream_record in zip(record_ids, hstream_records):
+        record_id = record_id_from(rid)
 
         record_header = RecordHeader(
             publish_time=TimeStamp(
-                seconds=hstream_record.header.publish_time.seconds,
-                nanos=hstream_record.header.publish_time.nanos,
+                seconds=batched_record.publishTime.seconds,
+                nanos=batched_record.publishTime.nanos,
             ),
             key=(
                 hstream_record.header.key if hstream_record.header.key else None
