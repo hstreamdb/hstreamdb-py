@@ -128,6 +128,8 @@ class HStreamDBClient:
         name: str,
         payloads: Iterable[Any],
         key: Optional[str] = None,
+        compresstype=None,
+        compresslevel=9,
     ) -> Iterator[RecordId]:
         """Append payloads to a stream.
 
@@ -145,7 +147,12 @@ class HStreamDBClient:
             ApiPb.AppendRequest(
                 streamName=name,
                 shardId=shard_id,
-                records=encode_records(payloads, key=key),
+                records=encode_records(
+                    payloads,
+                    key=key,
+                    compresstype=compresstype,
+                    compresslevel=compresslevel,
+                ),
             )
         )
         return (record_id_from(x) for x in r.recordIds)
@@ -153,11 +160,13 @@ class HStreamDBClient:
     def new_producer(
         self,
         append_callback: Optional[Type[BufferedProducer.AppendCallback]] = None,
-        size_trigger=0,
+        size_trigger=0,  # NOTE: this is the size of uncompressed records
         time_trigger=0,
         workers=1,
         retry_count=0,
         retry_max_delay=60,
+        compresstype=None,
+        compresslevel=9,
     ):
         return BufferedProducer(
             self._append_with_shard,
@@ -319,6 +328,8 @@ class HStreamDBClient:
         name: str,
         payloads: List[AppendPayload],
         shard_id: int,
+        compresstype=None,
+        compresslevel=9,
     ) -> Iterator[RecordId]:
         shard_id, channel = await self._lookup_append(name, None, shard_id)
         stub = ApiGrpc.HStreamApiStub(channel)
@@ -326,7 +337,11 @@ class HStreamDBClient:
             ApiPb.AppendRequest(
                 streamName=name,
                 shardId=shard_id,
-                records=encode_records_from_append_payload(payloads),
+                records=encode_records_from_append_payload(
+                    payloads,
+                    compresstype=compresstype,
+                    compresslevel=compresslevel,
+                ),
             )
         )
 

@@ -1,5 +1,6 @@
 import hashlib
 import logging
+import gzip
 from typing import Optional, List, Iterator
 import HStream.Server.HStreamApi_pb2 as ApiPb
 from google.protobuf.struct_pb2 import Struct
@@ -49,27 +50,45 @@ def _cons_record(payload, key):
     )
 
 
-def _encode_records(records: List[ApiPb.HStreamRecord]) -> ApiPb.BatchedRecord:
+def _encode_records(
+    records: List[ApiPb.HStreamRecord], compresstype=None, compresslevel=9
+) -> ApiPb.BatchedRecord:
     records_bs = ApiPb.BatchHStreamRecords(records=records).SerializeToString()
+    if not compresstype:
+        _compresstype = ApiPb.CompressionType.Value("None")
+    elif compresstype == "gzip":
+        _compresstype = ApiPb.CompressionType.Value("Gzip")
+        records_bs = gzip.compress(records_bs, compresslevel=compresslevel)
+    else:
+        raise KeyError(f"Unsupported CompressionType: {compresstype}")
+
     return ApiPb.BatchedRecord(
-        compressionType=ApiPb.CompressionType.Value(
-            "None"
-        ),  # TODO: Compression
+        compressionType=_compresstype,
         batchSize=len(records),
         payload=records_bs,
     )
 
 
-def encode_records(payloads, key=None) -> ApiPb.BatchedRecord:
-    return _encode_records([_cons_record(p, key) for p in payloads])
+def encode_records(
+    payloads, key=None, compresstype=None, compresslevel=9
+) -> ApiPb.BatchedRecord:
+    return _encode_records(
+        [_cons_record(p, key) for p in payloads],
+        compresstype=compresstype,
+        compresslevel=compresslevel,
+    )
 
 
-def encode_records_from_append_payload(payloads) -> ApiPb.BatchedRecord:
+def encode_records_from_append_payload(
+    payloads, compresstype=None, compresslevel=9
+) -> ApiPb.BatchedRecord:
     return _encode_records(
         [
             _cons_record((p._payload_bin, p._payload_type), p.key)
             for p in payloads
-        ]
+        ],
+        compresstype=compresstype,
+        compresslevel=compresslevel,
     )
 
 
@@ -77,10 +96,14 @@ def decode_records(record_: ApiPb.ReceivedRecord) -> Iterator[Record]:
     record_ids = record_.recordIds
     batched_record = record_.record
 
-    # TODO
-    if batched_record.compressionType != ApiPb.CompressionType.Value("None"):
-        raise NotImplementedError("Compression not support!")
-    payload_bytes = batched_record.payload
+    if batched_record.compressionType == ApiPb.CompressionType.Value("None"):
+        payload_bytes = batched_record.payload
+    elif batched_record.compressionType == ApiPb.CompressionType.Value("Gzip"):
+        payload_bytes = gzip.decompress(batched_record.payload)
+    else:
+        raise NotImplementedError(
+            f"Unsupported CompressionType: {batched_record.compressionType}"
+        )
 
     try:
         batched_hstream_record = ApiPb.BatchHStreamRecords()

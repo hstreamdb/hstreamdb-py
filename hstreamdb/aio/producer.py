@@ -213,7 +213,8 @@ class BufferedProducer:
     def __init__(
         self,
         flush_coro: Callable[
-            [str, List[AppendPayload], int], Awaitable[Iterator[RecordId]]
+            [str, List[AppendPayload], int, Optional[str], int],
+            Awaitable[Iterator[RecordId]],
         ],
         find_stream_key_id_coro: Callable[
             [str, Optional[str]], Awaitable[StreamKeyId]
@@ -224,6 +225,8 @@ class BufferedProducer:
         workers=1,
         retry_count=0,
         retry_max_delay=60,  # seconds
+        compresstype=None,
+        compresslevel=9,
     ):
         if workers < 1:
             raise ValueError("workers must be no less than 1")
@@ -233,6 +236,8 @@ class BufferedProducer:
         self._retry_count = retry_count
         self._retry_max_delay = retry_max_delay
         self._flush_coro = flush_coro
+        self._compresstype = compresstype
+        self._compresslevel = compresslevel
         self._find_stream_key_id_coro = find_stream_key_id_coro
         self._append_callback = append_callback
         self._queues = [asyncio.Queue() for _ in range(workers)]
@@ -327,7 +332,13 @@ class BufferedProducer:
         retries = 0
         while True:
             try:
-                await self._flush_coro(stream_name, payloads, stream_keyid)
+                await self._flush_coro(
+                    stream_name,
+                    payloads,
+                    stream_keyid,
+                    compresstype=self._compresstype,
+                    compresslevel=self._compresslevel,
+                )
                 await payload_group.post_flush()
             except Exception as e:  # TODO: should be a specific append exception
                 if self._retry_count < 0 or retries < self._retry_count:

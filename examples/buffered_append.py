@@ -17,26 +17,54 @@ class AppendCallback(BufferedProducer.AppendCallback):
         print(e)
 
 
+async def buffered_appends(client, stream_name):
+    p = client.new_producer(
+        append_callback=AppendCallback(),
+        size_trigger=10240,
+        time_trigger=0.5,
+        retry_count=2,
+    )
+
+    for i in range(50):
+        await p.append(stream_name, "x")
+
+    await asyncio.sleep(1)
+
+    for i in range(50):
+        await p.append(stream_name, "x")
+
+    await p.wait_and_close()
+
+
+async def buffered_appends_with_compress(client, stream_name):
+    p = client.new_producer(
+        append_callback=AppendCallback(),
+        size_trigger=10240,
+        time_trigger=0.5,
+        retry_count=2,
+        compresstype="gzip",
+        compresslevel=9,
+    )
+    for i in range(50):
+        await p.append(stream_name, "x")
+
+    await asyncio.sleep(1)
+
+    for i in range(50):
+        await p.append(stream_name, "x")
+
+    await p.wait_and_close()
+
+
 async def main(host, port, stream_name):
     async with await insecure_client(host, port) as client:
         await create_stream_if_not_exist(client, stream_name)
 
-        p = client.new_producer(
-            append_callback=AppendCallback(),
-            size_trigger=10240,
-            time_trigger=0.5,
-            retry_count=2,
-        )
+        print("-> BufferedProducer")
+        await buffered_appends(client, stream_name)
 
-        for i in range(50):
-            await p.append(stream_name, "x")
-
-        await asyncio.sleep(1)
-
-        for i in range(50):
-            await p.append(stream_name, "x")
-
-        await p.wait_and_close()
+        print("-> BufferedProducer with compression")
+        await buffered_appends_with_compress(client, stream_name)
 
 
 if __name__ == "__main__":

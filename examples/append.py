@@ -12,24 +12,50 @@ async def create_stream_if_not_exist(client, name):
         await client.create_stream(name)
 
 
-async def main(host, port, stream_name):
+async def appends_simple(client, stream_name):
+    print("-> Append raw msg...")
+    await client.append(stream_name, ["binmsg", "binmsg"])
+    print("=> Done")
+
+    print("-> Append hrecord msg...")
+    await client.append(stream_name, [{"msg": "hello"}])
+    print("=> Done")
+
+    print("-> Append msg with gzip compression...")
+    await client.append(stream_name, ["binmsg", "binmsg"], compresstype="gzip")
+    print("=> Done")
+
+
+async def appends_repl(client, stream_name):
     print(
-        'You can input a string message or a json message.\n'
-        '-----------------------------\n'
-        'For example:\n'
-        'input> raw_msg\n'
+        "You can input a string message or a json message.\n"
+        "-----------------------------\n"
+        "For example:\n"
+        "input> raw_msg\n"
+        "input> :gzip raw_msg\n"
         'input> {"msg": "hello, world"}\n'
         "-----------------------------"
     )
+    while True:
+        r = input("input> ")
+        compresstype = None
+        if r.startswith(":gzip "):
+            r = r.split(maxsplit=1)[1]
+            compresstype = "gzip"
+        try:
+            payload = json.loads(r)
+        except json.decoder.JSONDecodeError:
+            payload = r
+        await client.append(stream_name, [payload], compresstype=compresstype)
+
+
+async def main(host, port, stream_name, simple=False):
     async with await insecure_client(host=host, port=port) as client:
         await create_stream_if_not_exist(client, stream_name)
-        while True:
-            r = input("input> ")
-            try:
-                payload = json.loads(r)
-            except json.decoder.JSONDecodeError:
-                payload = r
-            await client.append(stream_name, [payload])
+        if simple:
+            await appends_simple(client, stream_name)
+        else:
+            await appends_repl(client, stream_name)
 
 
 if __name__ == "__main__":
@@ -46,6 +72,14 @@ if __name__ == "__main__":
         help="name of the stream, default is 'test_stream'",
         default="test_stream",
     )
+    parser.add_argument(
+        "--simple",
+        help="run simple appends",
+        default=False,
+        action="store_true",
+    )
 
     args = parser.parse_args()
-    asyncio.run(main(args.host, args.port, args.stream_name))
+    asyncio.run(
+        main(args.host, args.port, args.stream_name, simple=args.simple)
+    )
