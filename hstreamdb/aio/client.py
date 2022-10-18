@@ -331,6 +331,9 @@ class HStreamDBClient:
         compresstype=None,
         compresslevel=9,
     ) -> Iterator[RecordId]:
+        if not payloads:
+            logger.warning("Empty payloads, ignored.")
+            return
         shard_id, channel = await self._lookup_append(name, None, shard_id)
         stub = ApiGrpc.HStreamApiStub(channel)
         r = await stub.Append(
