@@ -32,14 +32,12 @@ logger = logging.getLogger(__name__)
 
 
 class Timer:
-    _continue: asyncio.Event = asyncio.Event()
-    _enable: bool = True
-    _task: asyncio.Task
-
     def __init__(self, delay, coro):
         self._delay = delay
         self._coro = coro
-        self._task = asyncio.create_task(self._loop())
+        self._continue: asyncio.Event = asyncio.Event()
+        self._enable: bool = True
+        self._task: asyncio.Task = asyncio.create_task(self._loop())
 
     def start(self):
         self._continue.set()
@@ -79,26 +77,20 @@ class Payload(abc.ABC, Sized):
 
 
 class PayloadGroup:
-    _payloads: List[Payload] = []
-    _size: int = 0
-    _lock: asyncio.Lock
-
-    _maxsize: int
-    _timer: Optional[Timer] = None
-
-    _flushing_payloads: List[Payload] = []
-    _flushing_size: int = 0
-    _flush_done: asyncio.Event = asyncio.Event()
-    _key: Any
-    _notify_queue: asyncio.Queue
-
     def __init__(self, queue, key, maxsize=0, maxtime=0):
-        self._key = key
-        self._notify_queue = queue
-        self._lock = asyncio.Lock()
-        self._maxsize = maxsize
-        if maxtime > 0:
-            self._timer = Timer(maxtime, self.flush)
+        self._payloads: List[Payload] = []
+        self._size: int = 0
+        self._flushing_payloads: List[Payload] = []
+        self._flushing_size: int = 0
+        self._flush_done: asyncio.Event = asyncio.Event()
+
+        self._key: Any = key
+        self._notify_queue: asyncio.Queue = queue
+        self._lock: asyncio.Lock = asyncio.Lock()
+        self._maxsize: int = maxsize
+        self._timer: Optional[Timer] = (
+            Timer(maxtime, self.flush) if maxtime > 0 else None
+        )
 
     async def append(self, payload: Payload):
         if not self._payloads and self._timer:
@@ -178,9 +170,6 @@ class PayloadGroup:
 
 
 class AppendPayload(Payload):
-    payload: Union[bytes, str, Dict[Any, Any]]
-    key: Optional[str]
-
     _payload_bin: bytes
     _payload_type: ApiPb.HStreamRecordHeader.Flag
 
@@ -189,9 +178,9 @@ class AppendPayload(Payload):
         payload: Union[bytes, str, Dict[Any, Any]],
         key: Optional[str] = None,
     ):
-        self.payload = payload
+        self.payload: Union[bytes, str, Dict[Any, Any]] = payload
         self._payload_bin, self._payload_type = encode_payload(self.payload)
-        self.key = key
+        self.key: Optional[str] = key
 
     def __len__(self):
         return len(self._payload_bin)
@@ -200,8 +189,6 @@ class AppendPayload(Payload):
 class BufferedProducer:
     StreamKeyId = int
     GroupKeyTy = Tuple[str, StreamKeyId]  # (stream_name, shard_id)
-
-    _group: Dict[GroupKeyTy, PayloadGroup] = {}
 
     class AppendCallback(abc.ABC):
         @abc.abstractmethod
@@ -240,6 +227,7 @@ class BufferedProducer:
     ):
         if workers < 1:
             raise ValueError("workers must be no less than 1")
+        self._group: Dict[BufferedProducer.GroupKeyTy, PayloadGroup] = {}
         self._size_trigger = size_trigger
         self._time_trigger = time_trigger
         self._retry_count = retry_count

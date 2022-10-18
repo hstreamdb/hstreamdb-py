@@ -52,23 +52,27 @@ def dec_api(f):
 
 
 class HStreamDBClient:
-    _stub: ApiGrpc.HStreamApiStub
-
     _TargetTy = str
 
-    _channels: Dict[_TargetTy, Optional[grpc.aio.Channel]] = {}
+    _stub: ApiGrpc.HStreamApiStub
+    _channels: Dict[_TargetTy, Optional[grpc.aio.Channel]]
 
     _current_target: _TargetTy
     # {(stream_name, shard_id)}
-    _append_channels: Dict[Tuple[str, int], _TargetTy] = {}
-    _subscription_channels: Dict[str, _TargetTy] = {}
-    _reader_channels: Dict[str, _TargetTy] = {}
-    _shards_info: Dict[str, List[Shard]] = {}
+    _append_channels: Dict[Tuple[str, int], _TargetTy]
+    _subscription_channels: Dict[str, _TargetTy]
+    _reader_channels: Dict[str, _TargetTy]
+    _shards_info: Dict[str, List[Shard]]
 
     _cons_target = staticmethod(lambda host, port: f"{host}:{port}")
 
     def __init__(self, host: str = "127.0.0.1", port: int = 6570):
         self._current_target = self._cons_target(host, port)
+        self._channels = {}
+        self._append_channels = {}
+        self._subscription_channels = {}
+        self._reader_channels = {}
+        self._shards_info = {}
         # TODO: secure_channel
         _channel = grpc.aio.insecure_channel(self._current_target)
         self._channels[self._current_target] = _channel
