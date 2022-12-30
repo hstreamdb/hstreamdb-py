@@ -30,7 +30,7 @@ from hstreamdb.utils import (
     encode_records_from_append_payload,
 )
 
-__all__ = ["insecure_client", "HStreamDBClient"]
+__all__ = ["secure_client", "insecure_client", "HStreamDBClient"]
 
 logger = logging.getLogger(__name__)
 
@@ -66,15 +66,21 @@ class HStreamDBClient:
 
     _cons_target = staticmethod(lambda host, port: f"{host}:{port}")
 
-    def __init__(self, host: str = "127.0.0.1", port: int = 6570):
+    def __init__(
+        self, host: str = "127.0.0.1", port: int = 6570, credentials=None
+    ):
         self._current_target = self._cons_target(host, port)
         self._channels = {}
         self._append_channels = {}
         self._subscription_channels = {}
         self._reader_channels = {}
         self._shards_info = {}
-        # TODO: secure_channel
-        _channel = grpc.aio.insecure_channel(self._current_target)
+        if credentials:
+            _channel = grpc.aio.secure_channel(
+                self._current_target, credentials
+            )
+        else:
+            _channel = grpc.aio.insecure_channel(self._current_target)
         self._channels[self._current_target] = _channel
         self._stub = ApiGrpc.HStreamApiStub(_channel)
 
@@ -481,5 +487,50 @@ async def insecure_client(host="127.0.0.1", port=6570):
         A :class:`HStreamDBClient`
     """
     client = HStreamDBClient(host=host, port=port)
+    await client.init_cluster_info()
+    return client
+
+
+async def secure_client(
+    host="127.0.0.1",
+    port=6570,
+    is_creds_file=False,
+    root_certificates=None,
+    private_key=None,
+    certificate_chain=None,
+):
+    """Creates a secure client to a cluster.
+
+    Args:
+        host: hostname to connect to HStreamDB, defaults to '127.0.0.1'
+        port: port to connect to HStreanDB, defaults to 6570
+        is_creds_file: whether the credentials is a filepath or the contents.
+        root_certificates: The PEM-encoded root certificates as a byte string,
+            or None to retrieve them from a default location chosen by gRPC
+            runtime. Note: if 'is_creds_file' is True this is the filepath
+            instead of the contents.
+        private_key: The PEM-encoded private key as a byte string, or None if no
+            private key should be used. Note: if 'is_creds_file' is True this
+            is the filepath instead of the contents.
+        certificate_chain: The PEM-encoded certificate chain as a byte string
+            to use or None if no certificate chain should be used. Note: if
+            'is_creds_file' is True this is the filepath instead of the contents.
+
+    Returns:
+        A :class:`HStreamDBClient`
+    """
+    if is_creds_file:
+        with open(root_certificates, "rb") as f_cert, open(
+            private_key, "rb"
+        ) as f_key, open(certificate_chain, "rb") as f_chain:
+            root_certificates = f_cert.read()
+            private_key = f_key.read()
+            certificate_chain = f_chain.read()
+    creds = grpc.ssl_channel_credentials(
+        root_certificates=root_certificates,
+        private_key=private_key,
+        certificate_chain=certificate_chain,
+    )
+    client = HStreamDBClient(host=host, port=port, credentials=creds)
     await client.init_cluster_info()
     return client

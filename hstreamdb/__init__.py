@@ -1,4 +1,4 @@
-from .aio.client import HStreamDBClient, insecure_client
+from .aio.client import HStreamDBClient, insecure_client, secure_client
 from .aio.producer import BufferedProducer
 from .aio.consumer import Consumer
 from .types import (
@@ -16,6 +16,7 @@ from .types import (
 __version__ = "0.3.0"
 
 __all__ = [
+    "secure_client",
     "insecure_client",
     "HStreamDBClient",
     "BufferedProducer",
