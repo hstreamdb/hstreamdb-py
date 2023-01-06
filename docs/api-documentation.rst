@@ -14,6 +14,7 @@ Create Client
 ^^^^^^^^^^^^^
 
 .. autofunction:: insecure_client
+.. autofunction:: secure_client
 
 HStreamDBClient Object
 ^^^^^^^^^^^^^^^^^^^^^^
