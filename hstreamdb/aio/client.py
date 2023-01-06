@@ -229,9 +229,10 @@ class HStreamDBClient:
         )
         return r.exists
 
-    @dec_api
     async def delete_subscription(self, subscription_id: str, force=False):
-        await self._stub.DeleteSubscription(
+        channel = await self._lookup_subscription(subscription_id)
+        stub = ApiGrpc.HStreamApiStub(channel)
+        await stub.DeleteSubscription(
             ApiPb.DeleteSubscriptionRequest(
                 subscriptionId=subscription_id, force=force
             )
@@ -306,8 +307,7 @@ class HStreamDBClient:
     async def read_reader(
         self, reader_id: str, max_records: str
     ) -> Iterator[Record]:
-        channel = await self._lookup_reader(reader_id)
-        stub = ApiGrpc.HStreamApiStub(channel)
+        stub = await self._lookup_reader_stub(reader_id)
         resp = await stub.ReadShard(
             ApiPb.ReadShardRequest(readerId=reader_id, maxRecords=max_records)
         )
@@ -316,9 +316,9 @@ class HStreamDBClient:
             decode_records(r) for r in resp.receivedRecords
         )
 
-    @dec_api
     async def delete_reader(self, reader_id: str) -> None:
-        await self._stub.DeleteShardReader(
+        stub = await self._lookup_reader_stub(reader_id)
+        await stub.DeleteShardReader(
             ApiPb.DeleteShardReaderRequest(readerId=reader_id)
         )
         return None
@@ -379,6 +379,10 @@ class HStreamDBClient:
 
         return keyid, self._get_channel(target)
 
+    async def _lookup_append_stub(self, name, key, shard_id):
+        keyid, channel = self._lookup_append(name, key, shard_id)
+        return keyid, ApiGrpc.HStreamApiStub(channel)
+
     async def _lookup_subscription(self, subscription_id: str):
         target = self._subscription_channels.get(subscription_id)
         if not target:
@@ -392,6 +396,10 @@ class HStreamDBClient:
 
         return self._get_channel(target)
 
+    async def _lookup_subscription_stub(self, subscription_id: str):
+        channel = self._lookup_subscription(subscription_id)
+        return ApiGrpc.HStreamApiStub(channel)
+
     async def _lookup_reader(self, reader_id: str):
         target = self._reader_channels.get(reader_id)
         if not target:
@@ -402,6 +410,10 @@ class HStreamDBClient:
         logger.debug(f"Find target for reader <{reader_id}>: {target}")
 
         return self._get_channel(target)
+
+    async def _lookup_reader_stub(self, reader_id: str):
+        channel = await self._lookup_reader(reader_id)
+        return ApiGrpc.HStreamApiStub(channel)
 
     @dec_api
     async def _lookup_append_api(self, shard_id):
