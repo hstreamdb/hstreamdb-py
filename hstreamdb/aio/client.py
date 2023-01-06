@@ -5,6 +5,7 @@ import grpc
 import logging
 from contextlib import asynccontextmanager
 import itertools
+from urllib.parse import urlparse
 
 import HStream.Server.HStreamApi_pb2 as ApiPb
 import HStream.Server.HStreamApi_pb2_grpc as ApiGrpc
@@ -488,16 +489,26 @@ class HStreamDBClient:
                 await channel.close(grace=None)
 
 
-async def insecure_client(host="127.0.0.1", port=6570):
+async def insecure_client(host="127.0.0.1", port=6570, url=None):
     """Creates an insecure client to a cluster.
 
     Args:
         host: hostname to connect to HStreamDB, defaults to '127.0.0.1'
         port: port to connect to HStreanDB, defaults to 6570
+        url: alternative service url to connect to HStreamDB, it should be in
+            'hstream://your-host' format. Note that if you provide this url
+            then the 'host' and 'port' args will be ignored.
 
     Returns:
         A :class:`HStreamDBClient`
     """
+    if url:
+        o = urlparse(url)
+        if o.scheme != "hstream":
+            raise KeyError(f"Invalid service url scheme {o.scheme}")
+        host = o.hostname
+        # FIXME: should the default port be the same as secure_client?
+        port = o.port or 6570
     client = HStreamDBClient(host=host, port=port)
     await client.init_cluster_info()
     return client
@@ -506,6 +517,7 @@ async def insecure_client(host="127.0.0.1", port=6570):
 async def secure_client(
     host="127.0.0.1",
     port=6570,
+    url=None,
     is_creds_file=False,
     root_certificates=None,
     private_key=None,
@@ -516,6 +528,9 @@ async def secure_client(
     Args:
         host: hostname to connect to HStreamDB, defaults to '127.0.0.1'
         port: port to connect to HStreanDB, defaults to 6570
+        url: alternative service url to connect to HStreamDB, it should be in
+            'hstreams://your-host' format. Note that if you provide this url
+            then the 'host' and 'port' args will be ignored.
         is_creds_file: whether the credentials is a filepath or the contents.
         root_certificates: The PEM-encoded root certificates as a byte string,
             or None to retrieve them from a default location chosen by gRPC
@@ -543,6 +558,12 @@ async def secure_client(
         private_key=private_key,
         certificate_chain=certificate_chain,
     )
+    if url:
+        o = urlparse(url)
+        if o.scheme != "hstreams":
+            raise KeyError(f"Invalid service url scheme {o.scheme}")
+        host = o.hostname
+        port = o.port or 6570
     client = HStreamDBClient(host=host, port=port, credentials=creds)
     await client.init_cluster_info()
     return client
