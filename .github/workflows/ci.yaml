@@ -25,11 +25,15 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
 
-      # TODO
-      # - name: build and test
-      #   run: python3
-
-      - name: sdist
+      - name: install dependencies
         run: |
-          python3 setup.py sdist
-          pip install dist/*
+          python3 -m pip install --upgrade pip
+
+      # TODO: Run tests
+
+      - name: build & verify package
+        run: |
+          pip install -U build wheel check-wheel-contents twine
+          python3 -m build --no-isolation
+          check-wheel-contents dist/*.whl
+          twine check --strict dist/*

@@ -20,13 +20,15 @@ jobs:
       - name: install dependencies
         run: |
           python3 -m pip install --upgrade pip
-          pip install -U build twine
-          pip install -r requirements.txt
 
-      - name: build
+      - name: build & verify package
         run: |
           python3 setup.py install  # a simple test
-          python3 setup.py sdist
+
+          pip install -U build wheel check-wheel-contents twine
+          python3 -m build --no-isolation
+          check-wheel-contents dist/*.whl
+          twine check --strict dist/*
 
       - name: upload
         if: ${{ github.event_name == 'push' }}
